@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.LectureWeekdayMapper">
+
+	<!-- 김혜린 : 강의 수정(강의 요일,시간) -->
+	<update id="updateLectureWeekday" parameterType="com.example.academy.dto.LectureOneTimeListDTO">
+	        UPDATE lecture_weekday
+	        SET
+	            weekday_code = #{weekdayCode},
+	            begin_time_code = #{beginTimeCode},
+	            end_time_code = #{endTimeCode}
+	        WHERE lecture_weekday_no = #{lectureWeekdayNo}
+	</update>
+
+
+</mapper>

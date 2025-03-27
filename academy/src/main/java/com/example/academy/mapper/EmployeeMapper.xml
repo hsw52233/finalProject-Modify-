@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.EmployeeMapper">
+
+	<!-- 진수우 : 사원 삭제 -->
+	<update id="deleteEmployee">
+		UPDATE employee
+		SET 
+			employee_pw = null
+			, employee_department = null
+			, employee_position = null
+			, employee_role = null
+			, photo_file_no = null
+			, stamp_file_no = null
+			, employee_exitdate = NOW()
+			, use_yn = 0
+		WHERE employee_no = #{employeeNo}
+	</update>
+
+	<!-- 진수우 : 스탬프파일번호 등록 -->
+	<update id="updateStampFileNo">
+		UPDATE employee
+		SET stamp_file_no = #{stampFileNo}
+		WHERE employee_no = #{employeeNo}
+	</update>
+	
+	<!-- 진수우 : 개인정보수정 -->
+	<update id="updateEmployee">
+		UPDATE employee
+		SET 
+			employee_name = #{employeeName}
+			, employee_gender = #{employeeGender}
+			, employee_birth = #{employeeBirth}
+			, employee_phone = #{employeePhone}
+			, employee_mail = #{employeeMail}
+		WHERE employee_no = #{employeeNo}
+	</update>
+
+	<!-- 진수우 : 개인정보수정 사원정보조회 -->
+	<select id="selectEmployeeModify">
+		SELECT 
+			e.employee_no employeeNo
+			, e.employee_name employeeName
+			, e.employee_gender employeeGender
+			, e.employee_birth employeeBirth
+			, e.address_no addressNo
+			, e.employee_phone employeePhone
+			, e.employee_department employeeDepartment
+			, e.employee_position employeePosition
+			, e.photo_file_no photoFileNo
+			, e.stamp_file_no stampFileNo
+			, e.employee_mail employeeMail
+			, a.address_no addressNo
+			, a.address_name addressName
+			, a.address_detail addressDetail
+			, a.post_code postCode
+			, fp.file_no photoFileNo
+			, fs.file_no stampFileNo
+		FROM employee e
+		LEFT OUTER JOIN file fp ON fp.file_no = e.photo_file_no
+		LEFT OUTER JOIN file fs ON fs.file_no = e.stamp_file_no
+		LEFT OUTER JOIN address a ON a.address_no = e.address_no
+		WHERE e.employee_no = #{employeeNo}
+	</select>
+
+	<!-- 진수우 : 사원부서/직책수정 -->
+	<update id="updateAffiliation" parameterType="com.example.academy.dto.AffiliationModifyDTO">
+		UPDATE employee 
+		SET employee_department = #{employeeDepartment}, employee_position = #{employeePosition}, employee_role = #{employeeRole}
+		WHERE employee_no = #{employeeNo}
+	</update>
+	
+	<!-- 진수우 : 사원상세조회 -->
+	<select id="selectEmployeeOne">
+		SELECT
+			e.employee_no employeeNo
+			, e.employee_pw employeePw
+			, e.employee_name employeeName
+			, e.employee_gender employeeGender
+			, e.employee_birth employeeBirth
+			, e.address_no addressNo
+			, e.employee_phone employeePhone
+			, e.employee_department employeeDepartment
+			, e.employee_position employeePosition
+			, e.photo_file_no photoFileNo
+			, e.stamp_file_no stampFileNo
+			, e.employee_mail employeeMail
+			, e.employee_date employeeDate
+			, e.create_date createDate
+			, e.update_date updateDate
+			, f.file_name fileName
+			, f.file_ext fileExt
+			, a.address_name addressName
+			, a.address_detail addressDetail
+			, a.post_code postCode
+		FROM employee e
+		LEFT OUTER JOIN file f ON f.file_no = e.photo_file_no
+		LEFT OUTER JOIN address a ON a.address_no = e.address_no
+		WHERE e.employee_no = #{employeeNo}
+	</select>
+
+	<!-- 진수우 : 사원 인원수 조회 -->
+	<select id="countEmployee">
+		SELECT COUNT(*) FROM employee
+	</select>
+
+	<!-- 진수우 : 사원조회 -->
+	<select id="selectEmployeeList">
+		SELECT
+			e.employee_no employeeNo
+			, e.employee_pw employeePw
+			, e.employee_name employeeName
+			, e.employee_gender employeeGender
+			, e.employee_birth employeeBirth
+			, e.address_no addressNo
+			, e.employee_phone employeePhone
+			, e.employee_department employeeDepartment
+			, e.employee_position employeePosition
+			, e.photo_file_no photoFileNo
+			, e.stamp_file_no stampFileNo
+			, e.employee_mail employeeMail
+			, e.employee_date employeeDate
+			, e.create_date createDate
+			, e.update_date updateDate
+			, f.file_name fileName
+			, f.file_ext fileExt
+		FROM employee e
+		LEFT OUTER JOIN file f ON f.file_no = e.photo_file_no
+		WHERE e.use_yn = 1
+	</select>
+	
+	<!-- 진수우 : 사원추가 -->
+	<insert id="insertEmployee" parameterType="com.example.academy.dto.EmployeeListDTO">
+		INSERT INTO employee(
+			employee_no
+			, employee_pw
+			, employee_name
+			, employee_gender
+			, employee_birth
+			, address_no
+			, employee_phone
+			, employee_department
+			, employee_position
+			, photo_file_no
+			, employee_mail
+			, employee_date
+			, employee_role
+		) VALUES(
+			#{employeeNo}
+			, #{employeePw}
+			, #{employeeName}
+			, #{employeeGender}
+			, #{employeeBirth}
+			, #{addressNo}
+			, #{employeePhone}
+			, #{employeeDepartment}
+			, #{employeePosition}
+			, #{photoFileNo}
+			, #{employeeMail}
+			, #{employeeDate}
+			, #{employeeRole}
+		)
+	</insert>
+
+</mapper>

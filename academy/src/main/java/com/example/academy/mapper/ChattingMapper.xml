@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.ChattingMapper">
+
+<!-- 전체 읽지 않은 메시지 개수 조회 -->
+<select id="totalUnreadMessages" parameterType="Integer" resultType="int">
+    SELECT CASE 
+        WHEN EXISTS (
+            SELECT 1 
+            FROM chat_message 
+            WHERE use_yn = 1 
+            AND toUserName = #{userId}
+        ) THEN 1
+        ELSE 0
+    END
+</select> 
+
+	<!-- 읽지 않은 메시지 확인 후 읽음으로 바꿈 -->
+	<update id="updateUseYn">
+		UPDATE chat_message
+		SET use_yn = 0
+		WHERE fromUserName = #{fromUserName} AND toUserName = #{toUserName}
+	</update>
+
+	<!-- 읽지 않은 메시지 개수 조회 -->
+<select id="countUnreadMessages" resultType="int">
+    SELECT COUNT(*)
+    FROM chat_message
+    WHERE fromUserName = #{fromUserName}
+    AND toUserName = #{toUserName}
+    AND use_yn = 1
+</select>
+
+
+
+	<!-- 메시지 insert -->
+	<insert id="insertMessage"
+		parameterType="com.example.academy.dto.chattingMessageDTO">
+		INSERT INTO chat_message (fromUserName, toUserName, content,
+		create_date,use_yn)
+		VALUES (#{fromUserName}, #{toUserName}, #{content}, NOW(), '1')
+	</insert>
+	
+	
+<!-- 메시지 조회 -->
+<select id="getMessages" resultType="com.example.academy.dto.chattingMessageDTO">
+    SELECT *
+    FROM chat_message
+    WHERE
+    (fromUserName = #{fromUserName} AND toUserName = #{toUserName})
+    OR
+    (fromUserName = #{toUserName} AND toUserName = #{fromUserName})
+    ORDER BY create_date ASC
+</select>
+
+
+</mapper>

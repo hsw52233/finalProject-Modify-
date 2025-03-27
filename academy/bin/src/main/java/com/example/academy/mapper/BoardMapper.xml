@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.BoardMapper">
+
+	<!-- 진수우 : 전체 댓글 삭제 -->
+	<update id="deleteAllComment">
+		UPDATE comment SET use_yn = 0
+		WHERE comment_no IN (SELECT comment_no
+							FROM board_comment
+							WHERE board_no = #{boardNo})
+	</update>
+	
+	<!-- 진수우 : 댓글 삭제 -->
+	<delete id="deleteComment">
+		UPDATE comment SET use_yn = 0 WHERE comment_no = #{commentNo}
+	</delete>
+	
+	<!-- 진수우 : 추가한 댓글 조회 -->
+	<select id="selectNewComment">
+		SELECT 
+			c.comment_no commentNo
+			, (SELECT e.employee_name FROM employee e WHERE e.employee_no = c.employee_no) employeeName
+			, (SELECT co.name FROM common co LEFT OUTER JOIN employee e ON e.employee_no = c.employee_no
+				WHERE e.employee_department = co.code) employeeDepartmentName
+			, c.comment_content commentContent
+		    , c.update_date updateDate
+		    , (SELECT f.file_name FROM file f LEFT OUTER JOIN employee e ON e.employee_no = c.employee_no
+				WHERE e.photo_file_no = f.file_no) photoFileName
+			, (SELECT f.file_ext FROM file f LEFT OUTER JOIN employee e ON e.employee_no = c.employee_no
+				WHERE e.photo_file_no = f.file_no) photoFileExt
+		FROM comment c
+		LEFT OUTER JOIN board_comment bc ON c.comment_no = bc.comment_no
+		LEFT OUTER JOIN board b ON bc.board_no = b.board_no
+		WHERE c.employee_no = #{employeeNo}
+		ORDER BY c.comment_no DESC
+		LIMIT 1;
+	</select>
+
+	<!-- 진수우 : 게시물/댓글 추가 -->
+	<insert id="insertBoardComment">
+		INSERT INTO board_comment(comment_no, board_no) VALUES(#{commentNo}, #{boardNo});
+	</insert>
+
+	<!-- 진수우 : 댓글 추가 -->
+	<insert id="insertComment" useGeneratedKeys="true" keyProperty="commentNo">
+		INSERT INTO comment(employee_no, comment_content) VALUES(#{employeeNo}, #{commentContent});
+	</insert>
+
+	<!-- 진수우 : 해당 게시물의 댓글 조회 -->
+	<select id="selectCommentList">
+		SELECT
+			c.comment_no commentNo
+			, (SELECT e.employee_no FROM employee e WHERE e.employee_no = c.employee_no) employeeNo
+			, (SELECT e.employee_name FROM employee e WHERE e.employee_no = c.employee_no) employeeName
+			, (SELECT co.name FROM common co LEFT OUTER JOIN employee e ON e.employee_no = c.employee_no
+				WHERE e.employee_department = co.code) employeeDepartmentName
+			, c.comment_content commentContent
+		    , c.update_date updateDate
+		    , (SELECT f.file_name FROM file f LEFT OUTER JOIN employee e ON e.employee_no = c.employee_no
+				WHERE e.photo_file_no = f.file_no) photoFileName
+			, (SELECT f.file_ext FROM file f LEFT OUTER JOIN employee e ON e.employee_no = c.employee_no
+				WHERE e.photo_file_no = f.file_no) photoFileExt
+		FROM comment c
+		LEFT OUTER JOIN board_comment bc ON c.comment_no = bc.comment_no
+		LEFT OUTER JOIN board b ON bc.board_no = b.board_no
+		WHERE bc.board_no = #{boardNo} AND c.use_yn = 1
+	</select>
+
+	<!-- 메인페이지에 최신 공지사항 5개 조회 -->
+	<select id="selectBoardListByMain" resultType="com.example.academy.dto.BoardListByMainDTO">
+		SELECT
+					b.board_no boardNo
+					, b.board_title boardTitle
+					, e.employee_name employeeName
+					, b.create_date createDate
+					, b.update_date updateDate
+		FROM board b
+		LEFT OUTER JOIN employee e ON e.employee_no = b.update_employee_no
+		WHERE b.use_yn = 1 AND board_category = 'BF001'
+		ORDER BY createDate DESC
+		LIMIT 5
+	</select>
+
+	<!-- 공지사항 삭제 버튼 클릭 시 yn 수정 -->
+	<update id="updateBoardYN" parameterType="Integer">
+		UPDATE board
+		SET use_yn = 0
+		WHERE board_no = #{boardNo};	
+	</update>
+
+	<!-- 공지사항 조회수 수정 -->
+	<update id="updateBoardCount" parameterType="Integer">
+		UPDATE board
+		SET board_count = board_count + 1
+		WHERE board_no = #{boardNo};	
+	</update>
+	
+	<!-- 공지사항 수정 -->
+	<update id="updateBoard" parameterType="com.example.academy.dto.BoardModifyDTO">
+			UPDATE board b
+			SET 
+			    b.board_title = #{boardTitle}
+			    , b.board_content = #{boardContent}
+			    , b.update_employee_no = #{updateEmployeeNo}
+			    , b.is_pinned = #{pinned}
+			    , b.board_category = #{boardCategory}
+			WHERE b.board_no = #{boardNo}
+	</update>
+	
+	<!-- 공지사항 추가 -->
+	<insert id="insertBoard" parameterType="com.example.academy.dto.BoardDTO" useGeneratedKeys="true" keyProperty="boardNo">
+		INSERT into board (
+			board_title
+			, board_content
+			, create_employee_no
+			, update_employee_no
+			, board_category
+			, is_pinned
+			)
+		VALUES (
+			#{boardTitle}
+			, #{boardContent}
+			, #{createEmployeeNo}
+			, #{updateEmployeeNo}
+			, #{boardCategory}
+			, #{pinned}
+			)
+	</insert>
+
+	<!-- 상세 공지사항 조회  -->
+	<select id="selectBoardOne" resultType="com.example.academy.dto.BoardDTO" parameterType="Integer">
+		SELECT
+			b.board_no boardNo
+			, b.board_title boardTitle
+			, b.board_content boardContent
+			, b.create_employee_no createEmployeeNo
+			, b.update_employee_no updateEmployeeNo
+			, b.board_category boardCategory
+			, b.board_count boardCount
+			, b.create_date createDate
+			, b.update_date updateDate
+			, f.file_name fileName
+			, f.file_ext fileExt
+			, e.employee_name employeeName
+			, e.employee_department employeeDepartment
+			, c.code
+			, c.name
+			, (SELECT c.name FROM common c WHERE c.code = e.employee_department) employeeDepartmentName
+			, b.is_pinned pinned
+		FROM board b
+		LEFT OUTER JOIN employee e ON e.employee_no = b.update_employee_no
+		LEFT OUTER JOIN file f ON f.file_no = e.photo_file_no
+		LEFT OUTER JOIN common c ON c.code = b.board_category
+		WHERE b.board_no = #{boardNo}
+	</select>
+	
+	<!-- 공지사항리스트 조회 -->
+	<select id="selectBoardList" resultType="com.example.academy.dto.BoardListDTO" parameterType="String">
+		SELECT
+			b.board_no boardNo
+			, f.file_name fileName
+			, f.file_ext fileExt
+			, b.board_title boardTitle
+			, e.employee_name employeeName
+			, b.board_category boardCategory
+			, (SELECT c.name FROM common c WHERE c.code = e.employee_department) employeeDepartmentName
+			, (SELECT COUNT(board_no) FROM board_file bf WHERE bf.board_no = b.board_no) boardFileCount
+			, b.board_count boardCount
+			, b.create_date createDate
+			, c.name
+			, b.is_pinned pinned
+		FROM board b
+		LEFT OUTER JOIN common c ON c.`code` = b.board_category
+		LEFT OUTER JOIN employee e ON e.employee_no = b.update_employee_no
+		LEFT OUTER JOIN file f ON f.file_no = e.photo_file_no
+		WHERE b.use_yn = 1
+			  AND b.board_category = #{categoryCode}
+		ORDER BY b.is_pinned DESC, b.create_date DESC
+	</select>
+
+</mapper>

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.CommonMapper">
+	
+	<!-- 조세영 : 게시판 카테고리 조회-->
+	<select id="selectBaordCategoryOne" resultType="com.example.academy.dto.AddCommonDTO">
+		SELECT 
+			code
+			, name 
+		FROM common
+		WHERE code = #{code}
+	</select>
+	
+	<!-- 조세영 : 제일 최근 추가된 게시판 카테고리 조회 -->
+	<select id="selectBoardCategoryByOne" parameterType="com.example.academy.dto.AddCommonDTO" resultType="com.example.academy.dto.AddCommonDTO">
+		SELECT 
+			code
+			, name 
+		FROM common
+		WHERE code LIKE 'BF%'
+			AND code != 'BF001'	
+		ORDER BY code DESC
+		LIMIT 1	
+	</select>	
+	
+	<!-- 조세영 : 게시판 카테고리 삭제 -->
+	<delete id="deleteBoardCategory">
+		DELETE FROM common WHERE code = #{code}
+	</delete>
+	
+	<!-- 조세영 : 게시판 카테고리 추가 -->
+	<insert id="insertBoardCategory" parameterType="com.example.academy.dto.AddCommonDTO">
+		INSERT INTO common(code, name) VALUES(#{code}, #{name})
+	</insert>
+	
+	<!-- 조세영 : 게시판 카테고리 중 코드번호가 제일 높은 거 하나 조회 -->
+	<select id="selectBoardCategoryByCode">
+		SELECT 
+			code 
+		FROM common
+		WHERE code LIKE 'BF%'
+		ORDER BY code DESC
+		LIMIT 1
+	</select>
+	
+	<!-- 조세영 : 게시판 카테고리 중 공지사항 제외하고 조회 -->
+	<select id="selectBoardCategoryByNotice">
+		SELECT 
+			code
+			, name 
+		FROM common
+		WHERE code LIKE 'BF%'
+			AND code != 'BF001'		
+	</select>
+	
+	<!-- 조세영 : 게시판 카테고리 조회 -->
+	<select id="selectBoardCategory">
+		SELECT 
+			code
+			, name 
+		FROM common
+		WHERE code LIKE 'BF%'		
+	</select>
+	
+	<!-- 김혜린 : 시간 조회 -->
+	<select id="selectTime">
+		SELECT 
+			code
+			, name 
+		FROM common
+		WHERE code LIKE 'TM%'		
+	</select>
+	
+	<!-- 김혜린 : 요일 조회 -->
+	<select id="selectWeekday">
+		SELECT 
+			code
+			, name 
+		FROM common
+		WHERE code LIKE 'WK%'		
+	</select>
+	
+	<!-- 진수우 : 부서 카테고리 조회 -->
+	<select id="selectDepartmentCategory">
+		SELECT
+			code
+			, name
+		FROM common
+		WHERE code LIKE 'DP%'
+	</select>
+	
+	<!-- 진수우 : 직급 카테고리 조회 -->
+	<select id="selectPositionCategory">
+		SELECT
+			code
+			, name
+		FROM common
+		WHERE code LIKE 'PS%'
+	</select>
+	
+	<!-- 진수우 : 파일 카테고리 조회 -->
+	<select id="selectFileCategory">
+		SELECT
+			code
+			, name
+		FROM common
+		WHERE code LIKE 'FC%'
+	</select>
+
+</mapper>

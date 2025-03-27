@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.ReservationMapper">
+	<!-- 박시현 : 회의실 예약수정 시 가능한 종료시간만 출력 + 현재 수정 중인 예약 시간도 출력 -->
+	<select id="updateReservationByEndTime" parameterType="com.example.academy.dto.AddReservationDTO">
+		SELECT 
+		    c.code code,
+		    c.name name
+		FROM common c
+		WHERE c.code LIKE 'TM%' 
+		  AND c.code != 'TM001' 
+		  AND (
+		        c.refer1 NOT IN (
+		            SELECT 
+		                c_inner.refer1
+		            FROM common c_inner
+		            INNER JOIN reservation r ON c_inner.code BETWEEN r.begin_time_code AND r.end_time_code
+		            INNER JOIN common com1 ON r.begin_time_code = com1.code
+		            INNER JOIN common com2 ON r.end_time_code = com2.code
+		            WHERE c_inner.code LIKE 'TM%'
+		              AND c_inner.refer1 BETWEEN (com1.refer1 + 1) AND com2.refer1
+		              AND r.meetingroom_no = #{meetingroomNo}
+		              AND r.reservation_date = #{reservationDate}
+		        )
+		    )
+		UNION
+		SELECT 
+		    c_inner.code,
+		    c_inner.name
+		FROM reservation r
+		INNER JOIN common c_inner ON c_inner.code BETWEEN r.begin_time_code AND r.end_time_code
+		WHERE r.reservation_no = #{reservationNo} 
+		ORDER BY code
+	</select>
+	<!-- 박시현 : 박시현 : 회의실 예약수정 시 가능한 시작시간만 출력 + 현재 수정 중인 예약 시간도 출력 -->
+	<select id="updateReservationByBeginTime">
+		SELECT 
+		    c.code code,
+		    c.name name
+		FROM common c
+		WHERE c.code LIKE 'TM%'
+		  AND c.code != 'TM010'
+		  AND (
+		        c.refer1 NOT IN (
+		            SELECT 
+		                c_inner.refer1
+		            FROM common c_inner
+		            INNER JOIN reservation r ON c_inner.code BETWEEN r.begin_time_code AND r.end_time_code
+		            INNER JOIN common com1 ON r.begin_time_code = com1.code
+		            INNER JOIN common com2 ON r.end_time_code = com2.code
+		            WHERE c_inner.code LIKE 'TM%'
+		              AND c_inner.refer1 BETWEEN com1.refer1 AND (com2.refer1 - 1)
+		              AND r.meetingroom_no = #{meetingroomNo}
+		              AND r.reservation_date = #{reservationDate}
+		        )
+		    )
+		UNION
+		SELECT 
+		    c_inner.code,
+		    c_inner.name
+		FROM reservation r
+		INNER JOIN common c_inner ON c_inner.code BETWEEN r.begin_time_code AND r.end_time_code
+		WHERE r.reservation_no = #{reservationNo}
+		ORDER BY code
+	</select>
+	
+	<!-- 박시현 : 회의실 예약신청 시 가능한 종료 시간만 출력 -->
+	<select id="selectReservationByEndTime" parameterType="com.example.academy.dto.AddReservationDTO">
+		SELECT 
+			c.code code
+			, c.name name
+		FROM common c
+		WHERE c.refer1 NOT IN (
+			SELECT 
+				c_inner.refer1
+			FROM common c_inner
+			INNER JOIN reservation r ON c_inner.code BETWEEN r.begin_time_code AND r.end_time_code
+			INNER JOIN common com1 ON r.begin_time_code = com1.code
+			INNER JOIN common com2 ON r.end_time_code = com2.code
+			WHERE c_inner.code LIKE 'TM%'
+				AND c_inner.refer1 BETWEEN (com1.refer1 + 1) AND com2.refer1
+				AND r.meetingroom_no = #{meetingroomNo}
+				AND r.reservation_date = #{reservationDate}
+			UNION
+			SELECT c_inner.refer1
+			FROM common c_inner
+			INNER JOIN reservation r ON c_inner.code BETWEEN r.begin_time_code AND r.end_time_code
+			INNER JOIN common com1 ON r.begin_time_code = com1.code
+			INNER JOIN common com2 ON r.end_time_code = com2.code
+			WHERE c_inner.code LIKE 'TM%'
+				AND c_inner.refer1 BETWEEN (com1.refer1 + 1) AND com2.refer1
+				AND r.meetingroom_no = #{meetingroomNo}
+				AND r.reservation_date = #{reservationDate}
+		) AND c.code LIKE 'TM%'
+		AND c.code != 'TM001'
+	</select>
+	<!-- 박시현 : 회의실 예약신청 시 가능한 시작 시간만 출력 -->
+	<select id="selectReservationByBeginTime">
+		SELECT 
+			c.code code
+			, c.name name
+		FROM common c
+		WHERE c.refer1 NOT IN (
+			SELECT 
+				c_inner.refer1
+			FROM common c_inner
+			INNER JOIN reservation r ON c_inner.code BETWEEN r.begin_time_code AND r.end_time_code
+			INNER JOIN common com1 ON r.begin_time_code = com1.code
+			INNER JOIN common com2 ON r.end_time_code = com2.code
+			WHERE c_inner.code LIKE 'TM%'
+				AND c_inner.refer1 BETWEEN com1.refer1 AND (com2.refer1 - 1)
+				AND r.meetingroom_no = #{meetingroomNo}
+				AND r.reservation_date = #{reservationDate}
+			UNION
+			SELECT c_inner.refer1
+			FROM common c_inner
+			INNER JOIN reservation r ON c_inner.code BETWEEN r.begin_time_code AND r.end_time_code
+			INNER JOIN common com1 ON r.begin_time_code = com1.code
+			INNER JOIN common com2 ON r.end_time_code = com2.code
+			WHERE c_inner.code LIKE 'TM%'
+				AND c_inner.refer1 BETWEEN com1.refer1 AND (com2.refer1 - 1)
+				AND r.meetingroom_no = #{meetingroomNo}
+				AND r.reservation_date = #{reservationDate}
+		) AND c.code LIKE 'TM%'
+		AND c.code != 'TM010'
+	</select>
+
+	<!-- 박시현 : 예약 취소 -->
+	<delete id="deleteReservation" parameterType="com.example.academy.dto.ReservationListDTO">
+		DELETE from reservation WHERE reservation_no = #{reservationNo} 
+	</delete>
+	
+	<!-- 박시현 : 예약 취소 시 예약 참여자 삭제 -->
+	<delete id="deleteReservationByEmployee" parameterType="com.example.academy.dto.ReservationListDTO">
+		DELETE from reservation_employee WHERE reservation_no = #{reservationNo} 
+	</delete>
+	
+	<!-- 박시현 : 예약 참여자 삭제 -->
+	<delete id="deleteReservationEmployee" parameterType="com.example.academy.dto.ReservationEmployeeDTO">
+		DELETE from reservation_employee WHERE employee_no = #{employeeNo} AND reservation_no = #{reservationNo}
+	</delete>
+ 
+	<!-- 박시현 : 예약 수정-->
+	<update id="updateReservation" parameterType="com.example.academy.dto.ReservationListDTO">
+	    UPDATE reservation r
+	    SET
+	        r.reservation_date = #{reservationDate},
+	        r.reservation_person = #{reservationPerson},
+	        r.reservation_title = #{reservationTitle},
+	        r.reservation_content = #{reservationContent},
+	        r.meetingroom_no = (
+	            SELECT meetingroom_no 
+	            FROM meetingroom 
+	            WHERE meetingroom_no = #{meetingroomNo} 
+	            LIMIT 1
+	        ),
+	        r.begin_time_code = (
+	            SELECT `code` 
+	            FROM common 
+	            WHERE `code` = #{beginTimeCode} 
+	            LIMIT 1
+	        ),
+	        r.end_time_code = (
+	            SELECT `code` 
+	            FROM common 
+	            WHERE `code` = #{endTimeCode} 
+	            LIMIT 1
+	        )
+	    WHERE r.reservation_no = #{reservationNo}
+	</update>
+	
+	<!-- 박시현 : 예약 참여자 수정 -->
+	<insert id="updateReservationEmployee" parameterType="com.example.academy.dto.ReservationEmployeeDTO">
+		INSERT IGNORE INTO reservation_employee (
+	        reservation_no,
+	        employee_no
+	    ) 
+	    VALUES (
+	        #{reservationNo},
+	        #{employeeNo}
+	    )
+	</insert>
+	
+	<!-- 박시현 : 예약번호 별 상세정보 -->
+	<select id="selectReservationOne" parameterType="Integer" resultType="com.example.academy.dto.ReservationListDTO">
+		SELECT
+			r.reservation_no reservationNo
+			, r.meetingroom_no meetingroomNo
+			, r.reservation_date reservationDate
+			, r.reservation_person reservationPerson
+			, r.reservation_title reservationTitle
+			, r.reservation_content reservationContent
+			, com1.`code` beginTimeCode
+			, com2.`code` endTimeCode
+			, com1.`name` beginTimeName
+			, com2.`name` endTimeName
+			, m.meetingroom_name meetingroomName
+			, e.employee_name employeeName
+			, GROUP_CONCAT(re.employee_no) AS employeeNos
+		FROM reservation r	LEFT OUTER JOIN meetingroom m
+		ON r.meetingroom_no = m.meetingroom_no
+		LEFT OUTER JOIN common com1
+		ON r.begin_time_code = com1.code
+		LEFT OUTER JOIN common com2
+		ON r.end_time_code = com2.code
+		LEFT OUTER JOIN employee e
+		ON r.reservation_person = e.employee_no
+		LEFT OUTER JOIN reservation_employee re
+		ON r.reservation_no = re.reservation_no
+		WHERE r.reservation_no = #{reservationNo}
+    	GROUP BY r.reservation_no
+	</select>
+
+	<!-- 박시현 : 회의 참여자 추가 -->
+	<insert id="insertReservationByEmployee" parameterType="com.example.academy.dto.ReservationEmployeeDTO">
+	    INSERT INTO reservation_employee (
+	        reservation_no,
+	        employee_no
+	    ) VALUES (
+	        #{reservationNo},
+	        #{employeeNo}
+	    )
+	</insert>
+
+	<!-- 박시현 : 예약신청시 참여인원에 필요한 사원검색 -->
+	<select id="selectReservationByEmployee" parameterType="Map" resultType="com.example.academy.vo.Employee">
+		SELECT 
+	        employee_no AS employeeNo,
+	        employee_name AS employeeName
+	    FROM employee e
+	    WHERE LOWER(e.employee_name) LIKE LOWER(CONCAT('%', #{searchEmployee}, '%')) AND e.use_yn = 1
+	    AND employee_no != #{reservationPerson}
+	</select>
+
+	<!-- 박시현 : 회의실 예약 신청 -->
+	<insert id="insertReservation" parameterType="com.example.academy.dto.AddReservationDTO" useGeneratedKeys="true" keyProperty="reservationNo">
+	    INSERT INTO reservation (
+	        meetingroom_no,
+	        begin_time_code,
+	        end_time_code,
+	        reservation_date,
+	        reservation_person,
+	        reservation_title,
+	        reservation_content
+	    ) VALUES (
+	        #{meetingroomNo},
+	        #{beginTimeCode},
+	        #{endTimeCode},
+	        #{reservationDate},
+	        #{reservationPerson},
+	        #{reservationTitle},
+	        #{reservationContent}
+	    )
+	</insert>
+	
+	<!-- 박시현) 회의 참여자 조회 -->
+	<select id="selectReservationEmployees" resultType="com.example.academy.dto.ReservationEmployeeDTO">
+	    SELECT
+	    	re.reservation_no reservationNo
+	        , re.employee_no employeeNo
+	        , e.employee_name employeeName
+	    FROM reservation_employee re
+	    LEFT JOIN employee e
+	        ON re.employee_no = e.employee_no
+	    WHERE re.reservation_no = #{reservationNo}
+	</select>
+	
+	<!-- 박시현) 예약목록 출력 -->
+	<select id="selectReservationList" resultType="com.example.academy.dto.ReservationListDTO">
+	   SELECT
+	        r.reservation_no reservationNo
+	        , r.reservation_date reservationDate
+	        , r.reservation_person reservationPerson
+	        , r.reservation_title reservationTitle
+	        , r.reservation_content reservationContent
+	        , m.meetingroom_name meetingroomName
+	        , com1.`name` beginTimeCode
+	        , com2.`name` endTimeCode
+	        , GROUP_CONCAT(e2.employee_name ORDER BY e2.employee_name ASC) AS reservationEmployees 
+	    FROM reservation r
+	    LEFT OUTER JOIN meetingroom m
+	        ON r.meetingroom_no = m.meetingroom_no
+	    LEFT OUTER JOIN common com1
+	        ON r.begin_time_code = com1.`code`
+	    LEFT OUTER JOIN common com2
+	        ON r.end_time_code = com2.`code`
+	    LEFT OUTER JOIN employee e
+	        ON r.reservation_person = e.employee_no
+	    LEFT OUTER JOIN reservation_employee re
+	        ON r.reservation_no = re.reservation_no
+	    LEFT OUTER JOIN employee e2
+	        ON re.employee_no = e2.employee_no
+	    GROUP BY r.reservation_no
+	</select>
+</mapper>

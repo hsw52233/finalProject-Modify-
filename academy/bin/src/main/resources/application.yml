@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: academy
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      enabled: 'true'
+      max-request-size: 100MB
+  profiles:
+    include: db, mail, port
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+mybatis:
+  mapper-locations: classpath*:com/example/academy/mapper/*.xml
+logging:
+  level:
+    org:
+      mybatis: debug
+    com:
+      example:
+        academy:
+          scheduled: debug
+          mapper: debug
+          controller: debug
+          restcontroller: debug
+          nodeValue: debug
+          service: debug
+    jdbc:
+      sqltiming: debug
+server:
+  servlet:
+    context-path: /academy
+  port: '80'

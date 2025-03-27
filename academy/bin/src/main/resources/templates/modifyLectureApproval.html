@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko" dir="ltr">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<title>강의결재수정</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="icon" type="image/x-icon" th:href="@{/images/logo.png}" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap"
+			rel="stylesheet" />
+		<link rel="stylesheet" type="text/css" media="screen"
+			th:href="@{/css/perfect-scrollbar.min.css}" />
+		<link rel="stylesheet" type="text/css" media="screen"
+			th:href="@{/css/style.css}" />
+		<link defer rel="stylesheet" type="text/css" media="screen"
+			th:href="@{/css/animate.css}" />
+		<link rel="stylesheet" th:href="@{/css/flatpickr.min.css}" />
+		<link rel="stylesheet" type="text/css" th:href="@{/css/nice-select2.css}" />
+		<script th:src="@{/js/perfect-scrollbar.min.js}"></script>
+		<script defer th:src="@{/js/popper.min.js}"></script>
+		<script th:src="@{/js/alpine-collaspe.min.js}"></script>
+		<script th:src="@{/js/alpine-persist.min.js}"></script>
+		<script defer th:src="@{/js/alpine-ui.min.js}"></script>
+		<script defer th:src="@{/js/alpine-focus.min.js}"></script>
+		<script defer th:src="@{/js/alpine.min.js}"></script>
+		<script th:src="@{/js/custom.js}"></script>
+		<script th:src="@{/js/flatpickr.js}"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+		<script src="https://uicdn.toast.com/tui-tree/latest/tui-tree.js"></script>
+		<script th:src="@{/js/nice-select2.js}"></script>
+		<link rel="stylesheet" type="text/css" href="https://uicdn.toast.com/tui-tree/latest/tui-tree.css"/>
+		
+			
+		<style>
+	       	.lecutre-title-align {
+	        	font-weight: bold;
+	        	text-align: center;
+	       	}
+	       	.lecutre-title {
+	        	font-weight: bold;
+	       	}
+	       	.lecutre-text-align {
+	        	text-align: center;
+	       	}
+		    .table-height tr {
+			    height: 58px; /* 원하는 높이로 설정 */
+			}
+	    </style>	
+	</head>
+	
+	<body x-data="main"
+		class="approval-body relative overflow-x-hidden font-nunito text-sm font-normal antialiased"
+		:class="[ $store.app.sidebar ? 'toggle-sidebar' : '', $store.app.theme === 'dark' || $store.app.isDarkMode ?  'dark' : '', $store.app.menu, $store.app.layout,$store.app.rtlClass]">
+		<!-- sidebar menu overlay -->
+		<div x-cloak class="fixed inset-0 z-50 bg-[black]/60 lg:hidden"
+			:class="{'hidden' : !$store.app.sidebar}"
+			@click="$store.app.toggleSidebar()"></div>
+	
+		<!-- 화면로딩 UI -->
+		<div
+			class="screen_loader animate__animated fixed inset-0 z-[60] grid place-content-center bg-[#fafafa] dark:bg-[#060818]">
+			<span class="w-5 h-5 m-auto mb-10"><span class="animate-ping inline-flex h-full w-full rounded-full bg-info"></span></span>
+		</div>
+	
+		<!-- 최상단 이동 버튼 -->
+		<div class="fixed bottom-6 z-50 ltr:right-6 rtl:left-6"
+			x-data="scrollToTop">
+			<template x-if="showTopButton">
+				<button type="button"
+					class="btn btn-outline-primary animate-pulse rounded-full bg-[#fafafa] p-2 dark:bg-[#060818] dark:hover:bg-primary"
+					@click="goToTop">
+					<svg width="24" height="24" class="h-4 w-4" viewBox="0 0 24 24"
+						fill="none" xmlns="http://www.w3.org/2000/svg">
+	                        <path opacity="0.5" fill-rule="evenodd"
+							clip-rule="evenodd"
+							d="M12 20.75C12.4142 20.75 12.75 20.4142 12.75 20L12.75 10.75L11.25 10.75L11.25 20C11.25 20.4142 11.5858 20.75 12 20.75Z"
+							fill="currentColor" />
+	                        <path
+							d="M6.00002 10.75C5.69667 10.75 5.4232 10.5673 5.30711 10.287C5.19103 10.0068 5.25519 9.68417 5.46969 9.46967L11.4697 3.46967C11.6103 3.32902 11.8011 3.25 12 3.25C12.1989 3.25 12.3897 3.32902 12.5304 3.46967L18.5304 9.46967C18.7449 9.68417 18.809 10.0068 18.6929 10.287C18.5768 10.5673 18.3034 10.75 18 10.75L6.00002 10.75Z"
+							fill="currentColor" />
+	                    </svg>
+				</button>
+			</template>
+		</div>
+	
+		<div class="main-container min-h-screen text-black dark:text-white-dark" :class="[$store.app.navbar]">
+			<!-- 사이드바 파일 연결 -->
+			<div th:replace="fragments/sidebar :: sidebar"></div>
+			<!-- end sidebar section -->
+	
+			<div class="main-content flex min-h-screen flex-col ">
+				<!-- 헤더 파일 연결 -->
+				<div th:replace="fragments/header :: header"></div>
+	
+				<!-- 메인화면 -->
+				<div class="animate__animated p-6 white-light" :class="[$store.app.animation]"> <!-- 메인화면 div 시작 -->
+					<h2 class="text-2xl ml-3 mb-5">나의 신청 목록</h2>
+					<div class="panel approval">
+						<form id="addForm" method="post" th:action="@{/modifyLectureApproval}" enctype="multipart/form-data">
+						<input type="hidden" name="lectureApprovalNo" th:value="${lectureApprovalOne.lectureApprovalNo}">
+						<div class="p-5">
+						<div class="flex items-center justify-between approval-top" style="margin-bottom: 20px; margin-top: 20px;">
+							<div class="text-3xl font-bold uppercase m-3" style="white-space: nowrap;">&nbsp;강의 신청서</div>
+							<div class="approval-employee">
+								<!-- 결재자 테이블 -->
+								<table id = "peoples" class="approval-table" >
+							        <tbody>
+							            <tr class="border-dark-dark-light" style="height: 30px;">
+							                <td class="bg-[#f4f4f4] lecutre-title-align" colspan="3" style="padding: 5px 10px;">결재자</td>				                
+							            </tr>
+							            <tr>
+							            	<td class="lecutre-text-align" style="border-right: 1px solid #f0f0f0;">1</td>
+							            	<td class="lecutre-text-align" style="border-right: 1px solid #f0f0f0;">2</td>
+							            	<td class="lecutre-text-align">3</td>
+							            </tr>
+							            <tr style="height: 50px;" id="alreadyPeople">
+							                <td class="lecutre-text-align" style="border-right: 1px solid #f0f0f0;">
+						                		<div th:each="employee : ${lectureApprovalEmployee}">
+						                			<div th:if="${employee.approvalLevel == 1}">
+						                				<span class="flex" th:text="${employee.approver} + '[' + ${employee.approverNo} + ']'" style="display: inline-flex; justify-content: center; align-items: center;"></span>
+						                			</div>
+						                		</div>
+							                </td>
+							                <td class="lecutre-text-align" style="border-right: 1px solid #f0f0f0;">
+						                		<div th:each="employee : ${lectureApprovalEmployee}">
+						                			<div th:if="${employee.approvalLevel == 2}">
+						                				<span class="flex" th:text="${employee.approver} + '[' + ${employee.approverNo} + ']'" style="display: inline-flex; justify-content: center; align-items: center;"></span>
+						                			</div>
+						                		</div>
+							                </td>
+							                <td class="lecutre-text-align" style="border-right: 1px solid #f0f0f0;">
+						                		<div th:each="employee : ${lectureApprovalEmployee}">
+						                			<div th:if="${employee.approvalLevel == 3 || employee.approvalLevel == ''}">
+						                				<span class="flex" th:text="${employee.approver} + '[' + ${employee.approverNo} + ']'" style="display: inline-flex; justify-content: center; align-items: center;"></span>
+						                			</div>
+						                		</div>
+							                </td>
+							            </tr>
+							            <!-- 결재선 변경 시 노출 -->
+							            <tr style="height: 50px;" id="newPeople" hidden>
+							                <td class="lecutre-text-align" style="border-right: 1px solid #f0f0f0;">
+							                	<div class="flex">
+							                		<div id="people1"></div>
+							                	</div>
+							                </td>
+							                <td class="lecutre-text-align" style="border-right: 1px solid #f0f0f0;">
+							                	<div class="flex">
+							                		<div id="people2"></div>
+							                	</div>
+							                </td>
+							                <td class="lecutre-text-align" style="border-right: 1px solid #f0f0f0;">
+							                	<div class="flex">
+							                		<div id="people3"></div>
+							                	</div>
+							                </td>
+							            </tr>					            
+							        </tbody>
+							    </table>
+							</div>
+						</div>
+						<!-- 테이블1 : 사원번호, 강사명, 강의날짜, 강의실 입력 -->
+						<div class="table-responsive">
+						    <table style="table-layout: fixed; width: 100%; height:65px; border: 1px solid #f0f0f0;" class="table-height">
+						        <tbody>
+						            <tr class="border-dark-dark-light">
+						                <td class="bg-[#f4f4f4] lecutre-title-align word-break word-break">사원 번호</td>
+						                <td class="lecutre-text-align" th:text="${userNo}"></td>
+						                <td class="bg-[#f4f4f4] lecutre-title-align word-break">기안자</td>
+						                <td class="lecutre-text-align" th:text="${userName}"><input type="hidden" value="${userNo}"></td>					                
+						            </tr>
+						            <tr>
+						        		<td class="bg-[#f4f4f4] lecutre-title-align">강의날짜</td>
+										<td colspan="2">
+											<div class="flex justify-between">
+												<div x-data="form1" class="w-full mr-3">
+							                       	<input name="lectureBeginDate" id="beginDate" class="form-input" placeholder="시작날짜" th:value="${lectureApprovalOne.lectureBeginDate}"/>
+											   	</div>
+												<div class="align-items-center">~</div>
+												<div x-data="form2" class="w-full ml-3">
+							                       	<input name="lectureEndDate" id="endDate" class="form-input form-input disabled:pointer-events-none disabled:bg-[#eee] dark:disabled:bg-[#1b2e4b] cursor-not-allowed" placeholder="종료날짜" th:value="${lectureApprovalOne.lectureEndDate}"/>
+											   	</div>
+											</div>
+										</td>
+										<td>
+											<select id="classroomList" class="form-select" name="classroomNo">
+												<option value="" disabled selected>강의실</option>
+											    <option th:each="cr : ${classroomList}" th:selected="${cr.classroomName == lectureApprovalOne.classroomName}" th:text="${cr.classroomName}" th:value="${cr.classroomNo}"></option>
+											</select>
+										</td>
+						        	</tr>
+						        </tbody>
+						    </table>
+						    <input type="hidden" name="lecturer" th:value="${userNo}">
+						</div>
+						
+						<!-- 테이블2 : 기존 강의요일, 강의시간 출력 -->
+						<div class="mt-3" id="alreadyLectureTime">
+							<div class="flex justify-end w-full mt-3 mb-3" id="modifyLectureTimediv">
+						    <button type="button" id="modifyLectureTime" class="btn btn-outline-primary word-break">강의시간 재선택</button>
+							</div>
+						    <table style="table-layout: fixed; width: 100%; border: 1px solid #f0f0f0;">
+						        <tbody id="">
+						            <tr th:each="weekday, stat : ${lectureApprovalWeekday}">
+						            	<td th:if="${stat.index == 0}" class="bg-[#f4f4f4] lecutre-title-align">강의시간</td>
+						        		<td th:if="${stat.index > 0}" class="bg-[#f4f4f4] lecutre-title-align"></td>
+						            	<!-- 요일 출력 -->
+						            	<td>
+											<input class="form-input disabled:pointer-events-none disabled:bg-[#eee] dark:disabled:bg-[#1b2e4b] cursor-not-allowed" th:value="${weekday.weekday}" disabled/>
+										</td>
+										<td colspan="2">
+											<div class="flex justify-between">
+												<!-- 시작시간 출력 -->
+												<input class="form-input disabled:pointer-events-none disabled:bg-[#eee] dark:disabled:bg-[#1b2e4b] cursor-not-allowed mr-3" th:value="${weekday.beginTime}" disabled/>
+												<div>~</div>
+												<!-- 종료시간 출력 -->
+												<input class="form-input disabled:pointer-events-none disabled:bg-[#eee] dark:disabled:bg-[#1b2e4b] cursor-not-allowed ml-3" th:value="${weekday.endTime}" disabled/>
+											</div>					
+										</td>
+						            </tr>
+						        </tbody>
+						        <tbody>
+						            <tr>
+						                <td style="border-left: 1px solid #ffffff; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;"></td>
+						                <td style="border-left: 1px solid #ffffff; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;"></td>
+										<td style="border-left: 1px solid #ffffff; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;"></td>
+										<td style="border-left: 1px solid #ffffff; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;"></td>
+						            </tr>
+						        </tbody>
+						    </table>
+						</div>
+						
+						<!-- 테이블2 : 강의요일, 강의시간 입력 -->
+						<div class="table-responsive" id="newLectureTime" hidden>
+							<div class="flex justify-end w-full mt-3">
+							    <a type="button" id="BtnEndTime" class="btn btn-outline-dark ltr:rounded-r-none rtl:rounded-l-none mb-3">강의시간 제거</a>
+							    <a type="button" id="btnAddTime" class="btn btn-outline-danger ltr:rounded-l-none rtl:rounded-r-none mb-3">강의시간 추가</a>
+							</div>
+						    <table style="table-layout: fixed; width: 100%; border: 1px solid #f0f0f0;">
+						        <tbody id="timeDiv">
+						            <tr>
+						            	<td class="bg-[#f4f4f4] lecutre-title-align">강의시간</td>
+						            	<!-- 요일 선택 -->
+						            	<td>
+											<select id="weekdayId0" class="form-select disabled:pointer-events-none disabled:bg-[#eee] dark:disabled:bg-[#1b2e4b] cursor-not-allowed" name="lectureWeekday[0].weekdayCode">
+												<option value="" disabled selected>요일</option>
+											    <option th:each="cwk : ${commonWeekday}" th:value="${cwk.code}" th:text="${cwk.name}"></option>
+											</select>
+										</td>
+										<!-- 시작시간 선택 -->
+										<td colspan="2">
+											<div class="flex justify-between">
+												<select id="beginTimeId0" class="form-select mr-3 disabled:pointer-events-none disabled:bg-[#eee] dark:disabled:bg-[#1b2e4b] cursor-not-allowed" name="lectureWeekday[0].beginTimeCode" onchange="disableSelectedOption()">
+												    <option value="" disabled selected>시작시간</option>
+												</select>	
+											<div>~</div>
+											<!-- 종료시간 선택 -->
+												<select id="endTimeId0" class="form-select form-input disabled:pointer-events-none disabled:bg-[#eee] dark:disabled:bg-[#1b2e4b] cursor-not-allowed ml-3 " name="lectureWeekday[0].endTimeCode" disabled>
+													<option value="" disabled selected>종료시간</option>
+												    <option th:each="ct : ${commonTime}" th:value="${ct.code}" th:text="${ct.name}"></option>
+												</select>
+											</div>					
+										</td>
+						            </tr>
+						        </tbody>
+						        <tbody>
+						            <tr>
+						                <td style="border-left: 1px solid #ffffff; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;"></td>
+						                <td style="border-left: 1px solid #ffffff; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;"></td>
+										<td style="border-left: 1px solid #ffffff; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;"></td>
+										<td style="border-left: 1px solid #ffffff; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;"></td>
+						            </tr>
+						        </tbody>
+						    </table>
+						</div>
+						
+						<!-- 테이블3 : 강의명, 강의내용 입력 -->
+						<div class="table-responsive" style="table-layout: fixed;">
+						    <table style="table-layout: fixed; width: 100%; height:65px; border: 1px solid #f0f0f0;">
+						        <tbody>
+						            <tr class="border-dark-dark-light">
+						                <td class="bg-[#f4f4f4] lecutre-title-align">강의명</td>
+						                <td colspan="3"><input id="lectureName" name="lectureName" type="text" class="form-input" placeholder="강의명" th:value="${lectureApprovalOne.lectureName}"></td>					                
+						            </tr>
+						            <tr>
+						            	<td class="bg-[#f4f4f4] lecutre-title-align">강의내용</td>
+						            	<td colspan="3"><textarea id="lectureContent" name="lectureContent" rows="15" cols="205" class="form-textarea w-full" placeholder="강의내용을 입력해주세요." th:text="${lectureApprovalOne.lectureContent}"></textarea></td>
+						            </tr>
+						            <tr>
+						                <td style="border-left: 1px solid #ffffff; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;"></td>
+						                <td style="border-left: 1px solid #ffffff; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;"></td>
+										<td style="border-left: 1px solid #ffffff; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;"></td>
+										<td style="border-left: 1px solid #ffffff; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;"></td>
+						            </tr>
+						        </tbody>
+						    </table>
+						</div>
+						
+						<!-- 테이블4 : 결재제목, 결재내용 입력 -->
+						<div class="table-responsive" style="margin-bottom: 20px; table-layout: fixed;">
+						    <table style="table-layout: fixed; width: 100%; height:65px; border: 1px solid #f0f0f0;">
+						        <tbody>
+						            <tr class="border-dark-dark-light ">
+						                <td class="bg-[#f4f4f4] lecutre-title-align">결재제목</td>
+						                <td colspan="3"><input id="lectureApprovalTitle" name="lectureApprovalTitle" type="text" class="form-input" placeholder="결재제목" th:value="${lectureApprovalOne.lectureApprovalTitle}"></td>					                
+						            </tr>
+						            <tr>
+						            	<td class="bg-[#f4f4f4] lecutre-title-align">결재내용</td>
+						            	<td colspan="3"><textarea id="lectureApprovalContent" name="lectureApprovalContent" rows="15" cols="205" class="form-textarea w-full" placeholder="결재내용을 입력해주세요." th:text="${lectureApprovalOne.lectureApprovalContent}"></textarea></td>
+						            </tr>
+						            <tr>
+						                <td style="border-left: 1px solid #ffffff; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;"></td>
+						                <td style="border-left: 1px solid #ffffff; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;"></td>
+										<td style="border-left: 1px solid #ffffff; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;"></td>
+										<td style="border-left: 1px solid #ffffff; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;"></td>
+						            </tr>
+						        </tbody>
+						    </table>
+						</div>
+						
+						<!-- 첨부파일 -->
+						<div>
+							<!-- 타이틀, 파일추가 버튼 -->
+							<div class="flex justify-between space-x-3 mb-3">
+								<div>
+									<label class="text-lg">첨부파일</label>
+								</div>
+								<div>
+									<a type="button" id="btnAddFile" class="btn btn-outline-primary ">+ 첨부파일 추가</a>
+								</div>
+							</div>
+							<!-- 파일선택 폼 -->
+							<div th:each="file, stat : ${lectureApprovalFile}" id="fileCount">
+							   <input type="hidden" th:value="${file.fileName}" name="alreadyFiles" th:id="'fileFieldId' + ${stat.index}">
+					           <div class="flex mt-1" th:id="'fileField' + ${stat.index}">
+						       	   <!-- 커스텀 버튼 -->
+						           <button 
+						               type="button" 
+						               class="btn btn-primary ltr:rounded-r-none rtl:rounded-l-none" 
+						               style="width: 150px;"
+						               th:onclick="document.getElementById('attendanceApprovalFile[[${stat.index}]]').click();">
+						               파일 선택
+						           </button>
+						           <!-- 숨겨진 파일 입력 -->
+						           <input 
+						           	   th:id="'attendanceApprovalFile' + ${stat.index}"
+						               name="lectureApprovalFile"
+						               type="file" 
+						               class="hidden"
+						               multiple
+						               th:onchange="document.getElementById('attendanceApprovalFileNameDisplay[[${stat.index}]]').value = this.files[0] ? this.files[0].name : '';
+            										document.getElementById('fileFieldId[[${stat.index}]]').remove();"/> <!-- 태그의 값이 바뀌면 input태그 제거 -->
+						           <!-- 파일 이름 표시 -->
+						           <input
+						           	   th:id="'attendanceApprovalFileNameDisplay' + ${stat.index}"
+						               type="text" 
+						               th:value="${file.fileOrigin + '.' + file.fileExt}"
+						               class="form-input ltr:rounded-l-none rtl:rounded-r-none flex-grow" 
+						               readonly />
+						           <!-- 휴지통 버튼 -->
+						           <button
+						           		type="button"
+						           		class = "btn btn-outline-danger ml-2"
+						           		id = "${removeButtonId}"
+						           		th:onclick="'removeFileField(' + ${stat.index} + ');'">
+						           		<!--휴지통 아이콘추가-->
+						           		<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+							           		<path
+							           			opacity="0.5"
+							           			d="M11.5956 22.0001H12.4044C15.1871 22.0001 16.5785 22.0001 17.4831 21.1142C18.3878 20.2283 18.4803 18.7751 18.6654 15.8686L18.9321 11.6807C19.0326 10.1037 19.0828 9.31524 18.6289 8.81558C18.1751 8.31592 17.4087 8.31592 15.876 8.31592H8.12405C6.59127 8.31592 5.82488 8.31592 5.37105 8.81558C4.91722 9.31524 4.96744 10.1037 5.06788 11.6807L5.33459 15.8686C5.5197 18.7751 5.61225 20.2283 6.51689 21.1142C7.42153 22.0001 8.81289 22.0001 11.5956 22.0001Z"
+							           			fill="currentColor"
+							           		/>
+							           		<path
+							           			d="M3 6.38597C3 5.90152 3.34538 5.50879 3.77143 5.50879L6.43567 5.50832C6.96502 5.49306 7.43202 5.11033 7.61214 4.54412C7.61688 4.52923 7.62232 4.51087 7.64185 4.44424L7.75665 4.05256C7.8269 3.81241 7.8881 3.60318 7.97375 3.41617C8.31209 2.67736 8.93808 2.16432 9.66147 2.03297C9.84457 1.99972 10.0385 1.99986 10.2611 2.00002H13.7391C13.9617 1.99986 14.1556 1.99972 14.3387 2.03297C15.0621 2.16432 15.6881 2.67736 16.0264 3.41617C16.1121 3.60318 16.1733 3.81241 16.2435 4.05256L16.3583 4.44424C16.3778 4.51087 16.3833 4.52923 16.388 4.54412C16.5682 5.11033 17.1278 5.49353 17.6571 5.50879H20.2286C20.6546 5.50879 21 5.90152 21 6.38597C21 6.87043 20.6546 7.26316 20.2286 7.26316H3.77143C3.34538 7.26316 3 6.87043 3 6.38597Z"
+							           			fill="currentColor"
+							           		/>
+							           		<path
+							           			fill-rule="evenodd"
+							           			clip-rule="evenodd"
+							           			d="M9.42543 11.4815C9.83759 11.4381 10.2051 11.7547 10.2463 12.1885L10.7463 17.4517C10.7875 17.8855 10.4868 18.2724 10.0747 18.3158C9.66253 18.3592 9.29499 18.0426 9.25378 17.6088L8.75378 12.3456C8.71256 11.9118 9.01327 11.5249 9.42543 11.4815Z"
+							           			fill="currentColor"
+							           		/>
+							           		<path
+							           			fill-rule="evenodd"
+							           			clip-rule="evenodd"
+							           			d="M14.5747 11.4815C14.9868 11.5249 15.2875 11.9118 15.2463 12.3456L14.7463 17.6088C14.7051 18.0426 14.3376 18.3592 13.9254 18.3158C13.5133 18.2724 13.2126 17.8855 13.2538 17.4517L13.7538 12.1885C13.795 11.7547 14.1625 11.4381 14.5747 11.4815Z"
+							           			fill="currentColor"
+							           		/>
+							           	</svg>
+						           </button>
+						       </div>
+						   </div>
+						   <div id="fileDiv" class="mt-1">
+					       		<!-- 첨부파일 추가 버튼 클릭시 폼추가되는 자리 -->
+					       </div>
+						</div>
+						
+						<!-- 버튼 --> 
+						<div class="mt-8 flex items-center justify-end">
+						   <a					
+                              type="button" style="width:130px;"
+                              class="btn btn-outline-danger ltr:mr-4 rtl:ml-4"
+                              th:href="@{/lectureApprovalOne(lectureApprovalNo=${lectureApprovalOne.lectureApprovalNo})}">	                          
+                              취소
+                           </a>
+                           <button id="openModalButtonAddPeople" type="button" class="btn btn-dark" style="width:130px;">
+                               결재선 변경
+                           </button>
+                           <a id="addBtn" type="button" class="btn btn-primary ltr:ml-4 rtl:mr-4" style="width:130px;">
+                           	   수정
+                           </a>
+                       </div>
+                       </div>
+                       
+                      <!--  결재선 변경 모달 -->
+					  <div class="fixed inset-0 z-[999] hidden overflow-y-auto bg-[black]/60" id="modalBackgroundAddPeople">
+					       <div class="flex min-h-screen items-center justify-center px-4" id="modalWrapperAddPeople">
+					           <div
+								    class="panel my-8 overflow-hidden rounded-lg border-0 p-0 md:w-full"
+								    id="modal"
+								    style="width: 700px; max-width: 90%;"
+								>
+					           
+					               <button
+					                   type="button"
+					                   class="absolute top-4 text-white-dark hover:text-dark ltr:right-4 rtl:left-4"
+					                   id="closeModalButtonAddPeople"
+					               >
+					                   <svg
+					                       xmlns="http://www.w3.org/2000/svg"
+					                       width="24px"
+					                       height="24px"
+					                       viewBox="0 0 24 24"
+					                       fill="none"
+					                       stroke="currentColor"
+					                       stroke-width="1.5"
+					                       stroke-linecap="round"
+					                       stroke-linejoin="round"
+					                       class="h-6 w-6"
+					                   >
+					                       <line x1="18" y1="6" x2="6" y2="18"></line>
+					                       <line x1="6" y1="6" x2="18" y2="18"></line>
+					                   </svg>
+					               </button>
+					               <h3
+					                   class="bg-[#fbfbfb] py-3 text-lg font-medium ltr:pl-5 ltr:pr-[50px] rtl:pl-[50px] rtl:pr-5 dark:bg-[#121c2c]"
+					               >
+					                   결재선 변경
+					               </h3>
+					               <div class="p-5">
+					               <!-- 모달내용 -->
+					               <div>
+						               <div class="flex justify-between p-5 pb-0">
+						               		<div>
+						               			<div style="border-radius: 10px;" id="tree" class="tui-tree-wrap"></div>
+						               		</div>
+						                    
+						                    <div style="margin-left: 30px;" class="w-full">
+						                    	<div class="text-xl font-bold mb-3">입력된 사원</div>
+						                    	<div class="text-danger mb-1">최대 3명까지 선택해주세요.</div>
+						                    	<div class="text-danger mb-3">위에 있는 사원부터 결재 순서가 이루어집니다.</div>
+						                    	<!-- 선택한 사원이 추가되는 영역 -->
+						                    	<div id="inputContainer">
+						                    		<input type="hidden" id="selectedBtn">
+						                    		<input type="hidden" id="deselectedBtn">
+						                    		<input type="hidden" id="selectedValue">
+						                    		<input type="hidden" id="approvalRemoveBtn">
+						                    		<div th:each="people : ${lectureApprovalEmployee}" class="flex w-full mb-1">
+										                <input id="${approvalPeoplesId}" type="text" class="form-input ltr:rounded-r-none rtl:rounded-l-none" name="approval" th:value="${people.approver} + '[' + ${people.approverNo} + ']'" readonly/>
+										                <button id="${approvalRemoveBtnId}" type="button" class="btn btn-danger ltr:rounded-l-none rtl:rounded-r-none" style="width: 80px;">삭제</button>
+										            </div>
+						                    	</div>
+						                    </div>
+						               </div>
+					               </div>
+					               <div class="flex justify-between mb-1 p-5 pt-0 mt-3">
+					               	   <button id="addEmployeeListButton" style="width:300px;" type="button" class="btn btn-dark">선택한 사원추가</button>
+						               <div class="flex items-center">
+							               <button
+							               	   id="applyModalButtonAddPeople"
+							               	   style="width:130px;"
+					                           type="button"
+					                           class="btn btn-primary">	                          
+					                           확정
+					                       </button>
+					                   </div>
+				                   </div>
+					           </div>
+					       </div>
+					   </div>
+					</div>
+                    </form>
+                    </div>
+                    <!--  풋터 파일 연결 -->
+					<div style="height:30px;"></div>
+       				<div th:replace="fragments/footer :: footer"></div>
+					</div>
+					
+				</div> <!-- 메인화면 div 끝 -->
+			</div>
+		
+		<!-- 5개 강의시간추가시 경고 모달 -->
+        <div class="modal">
+		  <div class="fixed inset-0 z-[999] hidden overflow-y-auto bg-[black]/60" id="modalBackgroundAddOver">
+		       <div class="flex min-h-screen items-center justify-center px-4" id="modalWrapperAddOver">
+		           <div
+		               class="panel my-8 w-[90%] max-w-lg overflow-hidden rounded-lg border-0 p-0 md:w-full"
+		               id="modal"
+		           >
+		               <button
+		                   type="button"
+		                   class="absolute top-4 text-white-dark hover:text-dark ltr:right-4 rtl:left-4"
+		                   id="closeModalButtonAddOver"
+		               >
+		                   <svg
+		                       xmlns="http://www.w3.org/2000/svg"
+		                       width="24px"
+		                       height="24px"
+		                       viewBox="0 0 24 24"
+		                       fill="none"
+		                       stroke="currentColor"
+		                       stroke-width="1.5"
+		                       stroke-linecap="round"
+		                       stroke-linejoin="round"
+		                       class="h-6 w-6"
+		                   >
+		                       <line x1="18" y1="6" x2="6" y2="18"></line>
+		                       <line x1="6" y1="6" x2="18" y2="18"></line>
+		                   </svg>
+		               </button>
+		               <h3
+		                   class="bg-[#fbfbfb] py-3 text-lg font-medium ltr:pl-5 ltr:pr-[50px] rtl:pl-[50px] rtl:pr-5 dark:bg-[#121c2c]"
+		               >
+		                   안내
+		               </h3>
+		               <div class="p-5">
+		                   입력가능한 개수를 초과했습니다.
+		                   <div class="mt-8 flex items-center justify-end">
+	                          <button
+	                          	  id="employeeBtnAddOver"
+	                              type="button"
+	                              class="btn btn-primary ltr:ml-4 rtl:mr-4"
+	                          >
+	                              확인
+	                          </button>
+	                      </div>
+		               </div>
+		           </div>
+		       </div>
+		   </div>
+		</div>
+		
+		<!-- 이미 존재하는 사원추가 시 경고 모달 -->
+        <div class="modal">
+		  <div class="fixed inset-0 z-[999] hidden overflow-y-auto bg-[black]/60" id="modalBackgroundAddExist">
+		       <div class="flex min-h-screen items-center justify-center px-4" id="modalWrapperAddExist">
+		           <div
+		               class="panel my-8 w-[90%] max-w-lg overflow-hidden rounded-lg border-0 p-0 md:w-full"
+		               id="modal"
+		           >
+		               <button
+		                   type="button"
+		                   class="absolute top-4 text-white-dark hover:text-dark ltr:right-4 rtl:left-4"
+		                   id="closeModalButtonAddExist"
+		               >
+		                   <svg
+		                       xmlns="http://www.w3.org/2000/svg"
+		                       width="24px"
+		                       height="24px"
+		                       viewBox="0 0 24 24"
+		                       fill="none"
+		                       stroke="currentColor"
+		                       stroke-width="1.5"
+		                       stroke-linecap="round"
+		                       stroke-linejoin="round"
+		                       class="h-6 w-6"
+		                   >
+		                       <line x1="18" y1="6" x2="6" y2="18"></line>
+		                       <line x1="6" y1="6" x2="18" y2="18"></line>
+		                   </svg>
+		               </button>
+		               <h3
+		                   class="bg-[#fbfbfb] py-3 text-lg font-medium ltr:pl-5 ltr:pr-[50px] rtl:pl-[50px] rtl:pr-5 dark:bg-[#121c2c]"
+		               >
+		                   안내
+		               </h3>
+		               <div class="p-5">
+		                   이미 추가된 사원입니다.
+		                   <div class="mt-8 flex items-center justify-end">
+	                          <button
+	                          	  id="employeeBtnAddExist"
+	                              type="button"
+	                              class="btn btn-primary ltr:ml-4 rtl:mr-4"
+	                          >
+	                              확인
+	                          </button>
+	                      </div>
+		               </div>
+		           </div>
+		       </div>
+		   </div>
+		</div>
+		
+		<!-- 강의날짜 미입력 경고 모달 -->
+        <div class="modal">
+		  <div class="fixed inset-0 z-[999] hidden overflow-y-auto bg-[black]/60" id="modalBackgroundNoLectureDate">
+		       <div class="flex min-h-screen items-center justify-center px-4" id="modalWrapperNoLectureDate">
+		           <div
+		               class="panel my-8 w-[90%] max-w-lg overflow-hidden rounded-lg border-0 p-0 md:w-full"
+		               id="modal"
+		           >
+		               <button
+		                   type="button"
+		                   class="absolute top-4 text-white-dark hover:text-dark ltr:right-4 rtl:left-4"
+		                   id="closeModalButtonNoLectureDate"
+		               >
+		                   <svg
+		                       xmlns="http://www.w3.org/2000/svg"
+		                       width="24px"
+		                       height="24px"
+		                       viewBox="0 0 24 24"
+		                       fill="none"
+		                       stroke="currentColor"
+		                       stroke-width="1.5"
+		                       stroke-linecap="round"
+		                       stroke-linejoin="round"
+		                       class="h-6 w-6"
+		                   >
+		                       <line x1="18" y1="6" x2="6" y2="18"></line>
+		                       <line x1="6" y1="6" x2="18" y2="18"></line>
+		                   </svg>
+		               </button>
+		               <h3
+		                   class="bg-[#fbfbfb] py-3 text-lg font-medium ltr:pl-5 ltr:pr-[50px] rtl:pl-[50px] rtl:pr-5 dark:bg-[#121c2c]"
+		               >
+		                   안내
+		               </h3>
+		               <div class="p-5">
+		                   시작날짜, 종료날짜, 강의실을 먼저 입력해주세요.
+		                   <div class="mt-8 flex items-center justify-end">
+	                          <button
+	                          	  id="employeeBtnNoLectureDate"
+	                              type="button"
+	                              class="btn btn-primary ltr:ml-4 rtl:mr-4"
+	                          >
+	                              확인
+	                          </button>
+	                      </div>
+		               </div>
+		           </div>
+		       </div>
+		   </div>
+		</div>
+		
+		<!-- 유효성검사 경고 모달 -->
+        <div class="modal">
+		  <div class="fixed inset-0 z-[999] hidden overflow-y-auto bg-[black]/60" id="modalBackgroundSubmitError">
+		       <div class="flex min-h-screen items-center justify-center px-4" id="modalWrapperSubmitError">
+		           <div
+		               class="panel my-8 w-[90%] max-w-lg overflow-hidden rounded-lg border-0 p-0 md:w-full"
+		               id="modal"
+		           >
+		               <button
+		                   type="button"
+		                   class="absolute top-4 text-white-dark hover:text-dark ltr:right-4 rtl:left-4"
+		                   id="closeModalButtonSubmitError"
+		               >
+		                   <svg
+		                       xmlns="http://www.w3.org/2000/svg"
+		                       width="24px"
+		                       height="24px"
+		                       viewBox="0 0 24 24"
+		                       fill="none"
+		                       stroke="currentColor"
+		                       stroke-width="1.5"
+		                       stroke-linecap="round"
+		                       stroke-linejoin="round"
+		                       class="h-6 w-6"
+		                   >
+		                       <line x1="18" y1="6" x2="6" y2="18"></line>
+		                       <line x1="6" y1="6" x2="18" y2="18"></line>
+		                   </svg>
+		               </button>
+		               <h3
+		                   class="bg-[#fbfbfb] py-3 text-lg font-medium ltr:pl-5 ltr:pr-[50px] rtl:pl-[50px] rtl:pr-5 dark:bg-[#121c2c]"
+		               >
+		                   안내
+		               </h3>
+		               <div class="p-5">
+		                   입력되지 않은 항목이 있습니다.
+		                   <div class="mt-8 flex items-center justify-end">
+	                          <button
+	                          	  id="employeeBtnSubmitError"
+	                              type="button"
+	                              class="btn btn-primary ltr:ml-4 rtl:mr-4"
+	                          >
+	                              확인
+	                          </button>
+	                      </div>
+		               </div>
+		           </div>
+		       </div>
+		   </div>
+		</div>
+		
+		<!-- 파일을 첨부하지 않고 첨부파일추가 버튼을 누를 때 경고 모달 -->
+        <div class="modal">
+		  <div class="fixed inset-0 z-[999] hidden overflow-y-auto bg-[black]/60" id="modalBackgroundAddFileError">
+		       <div class="flex min-h-screen items-center justify-center px-4" id="modalWrapperAddFileError">
+		           <div
+		               class="panel my-8 w-[90%] max-w-lg overflow-hidden rounded-lg border-0 p-0 md:w-full"
+		               id="modal"
+		           >
+		               <button
+		                   type="button"
+		                   class="absolute top-4 text-white-dark hover:text-dark ltr:right-4 rtl:left-4"
+		                   id="closeModalButtonAddFileError"
+		               >
+		                   <svg
+		                       xmlns="http://www.w3.org/2000/svg"
+		                       width="24px"
+		                       height="24px"
+		                       viewBox="0 0 24 24"
+		                       fill="none"
+		                       stroke="currentColor"
+		                       stroke-width="1.5"
+		                       stroke-linecap="round"
+		                       stroke-linejoin="round"
+		                       class="h-6 w-6"
+		                   >
+		                       <line x1="18" y1="6" x2="6" y2="18"></line>
+		                       <line x1="6" y1="6" x2="18" y2="18"></line>
+		                   </svg>
+		               </button>
+		               <h3
+		                   class="bg-[#fbfbfb] py-3 text-lg font-medium ltr:pl-5 ltr:pr-[50px] rtl:pl-[50px] rtl:pr-5 dark:bg-[#121c2c]"
+		               >
+		                   안내
+		               </h3>
+		               <div class="p-5">
+		                   이전 항목을 입력하고 추가버튼을 눌러주세요.
+		                   <div class="mt-8 flex items-center justify-end">
+	                          <button
+	                          	  id="employeeBtnAddFileError"
+	                              type="button"
+	                              class="btn btn-primary ltr:ml-4 rtl:mr-4"
+	                          >
+	                              확인
+	                          </button>
+	                      </div>
+		               </div>
+		           </div>
+		       </div>
+		   </div>
+		</div>
+		<script th:inline="javascript">
+        	var lectureApprovalNo = [[${lectureApprovalOne.lectureApprovalNo}]]
+        </script>
+        <script th:inline="javascript">
+	    	var locations = [[${location}]];
+	    </script>
+	    <script th:inline="javascript">
+	    	var ports = [[${port}]];
+	    </script>
+	   <script th:src="@{/customjs/modifyLectureApproval.js}"> </script>
+	   
+	</body>
+
+</html>

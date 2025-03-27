@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.AttendanceMapper">
+	
+	<!-- 오늘 퇴근 활성화 확인 -->
+	<select id="selectCheckout" parameterType="com.example.academy.dto.AttendanceDTO">
+		SELECT 
+			count(attendance_checkout)
+		FROM attendance
+		WHERE employee_no = #{employeeNo}
+		  AND attendance_date = #{currentDate}
+	</select>
+	
+	<!-- 오늘 출근 활성화 확인 -->
+	<select id="selectCheckin" parameterType="com.example.academy.dto.AttendanceDTO">
+		SELECT 
+			count(attendance_checkin)
+		FROM attendance
+		WHERE employee_no = #{employeeNo}
+		  AND attendance_date = #{currentDate}
+	</select>
+	
+	<!-- 오늘 근태 조퇴 활성화 -->
+	<update id="updateEarlyLeave" parameterType="com.example.academy.dto.AttendanceDTO">
+		UPDATE attendance
+		SET attendance_early_leave = 1					
+		WHERE employee_no = #{employeeNo}
+			AND attendance_date = #{currentDate}
+	</update>
+	
+	<!-- 오늘 근태 지각 활성화 -->
+	<update id="updateLate" parameterType="com.example.academy.dto.AttendanceDTO">
+		UPDATE attendance
+		SET attendance_late = 1						
+		WHERE employee_no = #{employeeNo}
+			AND attendance_date = #{currentDate}
+	</update>
+	
+	<!-- 오늘 출퇴근 시간 조회 -->
+	<select id="selectCheckTime" parameterType="com.example.academy.dto.AttendanceDTO"
+							resultType="com.example.academy.dto.AttendanceDTO">
+		SELECT 
+		    IFNULL(attendance_checkin, '') attendanceCheckIn
+		    , IFNULL(attendance_checkout, '') attendanceCheckOut
+		FROM attendance
+		WHERE employee_no = #{employeeNo}
+		  AND attendance_date = #{currentDate}
+	</select>
+	
+	<!-- 근태유형 변경 -->
+	<update id="updateContent" parameterType="com.example.academy.dto.AttendanceDTO">
+		UPDATE attendance
+		SET attendance_content = #{attendanceContent}						
+		WHERE employee_no = #{employeeNo}
+			AND attendance_date = #{currentDate}
+	</update>
+	
+	<!-- 하루 사원의 근무 시간 조회 -->
+	<select id="selectWorkTime" parameterType="com.example.academy.dto.AttendanceDTO">
+		SELECT 
+		    TIMESTAMPDIFF(MINUTE, attendance_checkin, attendance_checkout) AS workTime
+		FROM attendance
+		WHERE employee_no = #{employeeNo}
+		  AND attendance_date = #{currentDate}
+	</select>
+	
+	<!-- 퇴근 클릭 시 수정  -->
+	<update id="updateCheckout" parameterType="com.example.academy.dto.AttendanceDTO">
+		UPDATE attendance a 
+		SET a.attendance_status = 'ST003' 
+			, a.attendance_checkout = NOW()						
+		WHERE a.employee_no = #{employeeNo}
+		AND a.attendance_date = #{currentDate}
+	</update>
+	
+	<!-- 9시 이후에 출근 버튼 클릭시 수정(지각) -->
+	<update id="updateCheckinByTardy" parameterType="com.example.academy.dto.AttendanceDTO">
+		UPDATE attendance a 
+		SET a.attendance_status = 'ST002'
+			, attendance_content = 'CT006' 
+			, a.attendance_checkin = NOW()						
+		WHERE a.employee_no = #{employeeNo}
+			AND a.attendance_date = #{currentDate}
+	</update>
+	
+	<!-- 9시 전에 출근 버튼 클릭시 수정 -->
+	<update id="updateCheckin" parameterType="com.example.academy.dto.AttendanceDTO">
+		UPDATE attendance a 
+		SET a.attendance_status = 'ST002' 
+			, a.attendance_checkin = NOW()						
+		WHERE a.employee_no = #{employeeNo}
+			AND a.attendance_date = #{currentDate}
+	</update>
+	
+	<!-- 최근 6개월 월별 근무시간 총합 조회 -->
+	<select id="selectWorkTimeByMonth" parameterType="Integer"
+									resultType="Integer">
+		SELECT
+			<!-- 월별 근무시간 총합 -->
+		    SUM(TIMESTAMPDIFF(MINUTE, attendance_checkin, attendance_checkout)) AS total_work_time
+		FROM attendance 
+		WHERE employee_no = #{employeeNo}
+		      AND attendance_checkin >= CURDATE() - INTERVAL 6 MONTH  <!-- 최근 6개월간 데이터 -->
+		GROUP BY DATE_FORMAT(attendance_checkin, '%Y-%m')  <!-- 월별로 그룹화 -->
+		ORDER BY DATE_FORMAT(attendance_checkin, '%Y-%m')
+	</select>
+	
+	<!-- 당일 월 지각, 조퇴, 결근 횟수 조회 -->
+	<select id="selectAttendanceContent" parameterType="Integer" 
+										resultType="com.example.academy.dto.AttendanceContentDTO">
+		SELECT
+		    COUNT(CASE WHEN a.attendance_late = 1 THEN 1 END) AS late, <!-- 지각 -->
+		    COUNT(CASE WHEN a.attendance_early_leave = 1 THEN 1 END) AS earlyLeave,<!-- 조퇴 -->
+		    COUNT(CASE WHEN c.name = '결근' THEN 1 END) AS absence <!-- 결근 -->
+		FROM attendance a
+		LEFT OUTER JOIN common c ON c.code = a.attendance_content
+		WHERE a.employee_no = #{employeeNo} 
+			  AND DATE_FORMAT(a.attendance_date, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')
+	</select>
+	
+	<!-- 출근 관리 리스트 조회 -->
+	<select id="selectAttendanceList" parameterType="com.example.academy.dto.AttendanceListDTO" 
+									resultType="com.example.academy.dto.AttendanceListDTO">
+		SELECT 
+		    DATE_FORMAT(a.attendance_date, '%d') AS date,
+		    c.name,
+		    a.attendance_checkin AS checkin,
+		    a.attendance_checkout AS checkout,
+		    <!-- 근무 시간 계산 (퇴근시간 - 출근시간) -->
+		    IFNULL(
+		        DATE_FORMAT(
+		            SEC_TO_TIME(TIMESTAMPDIFF(SECOND, a.attendance_checkin, a.attendance_checkout)), 
+		            '%H:%i'
+		        ), '00:00') AS workTime,
+		    <!-- 근무 초과 시간 계산 (근무시간이 9시간을 초과하면 초과 시간을 계산) -->
+		    IFNULL(
+		        DATE_FORMAT(
+		            SEC_TO_TIME(
+		                GREATEST(TIMESTAMPDIFF(SECOND, a.attendance_checkin, a.attendance_checkout) - 32400, 0)
+		            ),
+		            '%H:%i'
+		        ), '00:00') AS overTime
+		    
+		FROM attendance a
+		LEFT OUTER JOIN common c ON c.code = a.attendance_content
+		WHERE a.employee_no = #{employeeNo} 
+		    AND DATE_FORMAT(a.attendance_date, '%Y-%m') = #{month}
+		    AND a.attendance_date &lt;= NOW()
+		ORDER BY date DESC
+	</select>
+</mapper>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.BoardFileMapper">
+
+	<!-- 게시판 수정 시 게시판/파일 연결테이블 해당 정보 삭제 -->
+	<delete id="deleteBoardFile">
+		DELETE FROM board_file
+		WHERE board_no = #{boardNo}
+		AND file_no = #{fileNo}
+	</delete>
+
+	<!-- boardNo에 해당하는 게시판 파일 리스트 조회 -->
+	<select id="selectBoardFileList" resultType="com.example.academy.dto.BoardFileDTO" parameterType="Integer">
+		SELECT
+			bf.board_no boardNo
+			, bf.file_no fileNo
+			, f.file_name fileName
+			, f.file_ext fileExt
+			, f.file_origin fileOrigin
+			, f.file_size fileSize
+			, f.file_type fileType
+			, f.file_category fileCategory
+			, bf.create_date createDate
+			, bf.update_date updateDate
+		FROM board_file bf
+		INNER JOIN file f ON f.file_no = bf.file_no
+		WHERE bf.board_no = #{boardNo}
+	</select>
+
+	<!-- boardFile 추가 -->
+	<insert id="insertBoardFile" parameterType="com.example.academy.vo.BoardFile">
+		INSERT into board_file (
+			board_no
+			, file_no
+			)
+		VALUES (
+			#{boardNo}
+			, #{fileNo}
+			)
+	</insert>
+</mapper>

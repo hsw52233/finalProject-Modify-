@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.ClassroomMapper">
+	<!-- 박시현 : 강의실 삭제 -->
+	<delete id="deleteClassroom"  parameterType="com.example.academy.vo.Classroom">
+		DELETE FROM classroom WHERE classroom_no = #{classroomNo}
+	</delete>
+	
+	<!-- 박시현 : 강의실번호 별 상세정보 -->
+	<select id="classroomOne" parameterType="Integer" resultType="com.example.academy.dto.ClassroomListDTO">
+		SELECT 
+			c.classroom_no classroomNo
+			, c.classroom_name classroomName
+			, c.classroom_manager classroomManager
+			, c.classroom_capacity classroomCapacity
+			, e.employee_name employeeName
+		FROM classroom c INNER JOIN employee e 
+		ON c.classroom_manager = e.employee_no 
+		WHERE classroom_no = #{classroomNo}
+	</select>
+
+	<!-- 박시현 : 강의실 수정 -->
+	<update id="updateClassroom" parameterType="com.example.academy.dto.ClassroomAddDTO">
+		UPDATE classroom
+		SET
+		classroom_name = CASE WHEN #{classroomName} != '' THEN #{classroomName} ELSE
+		classroom_name END,
+		classroom_manager = CASE WHEN #{classroomManager} != '' THEN (SELECT employee_no FROM
+		employee WHERE employee_no = #{classroomManager}) ELSE
+		classroom_manager END,
+		classroom_capacity = CASE WHEN #{classroomCapacity} != '' THEN #{classroomCapacity}
+		ELSE classroom_capacity END
+		WHERE classroom_no = #{classroomNo}
+	</update>
+
+	<!-- 박시현 : 강의실 등록 -->
+	<insert id="insertClassroom" parameterType="com.example.academy.dto.ClassroomAddDTO">
+		INSERT INTO 
+		classroom(
+			classroom_no
+			, classroom_name
+			, classroom_manager
+			, classroom_capacity
+		) VALUES(
+			#{classroomNo}
+			, #{classroomName}
+			, #{classroomManager}
+			, #{classroomCapacity}
+		)
+	</insert>
+
+	<!-- 박시현 : 강의실리스트 조회 -->
+	<select id="selectClassroomList" resultType="com.example.academy.dto.ClassroomListDTO">
+		SELECT 
+			c.classroom_no classroomNo
+			, c.classroom_name classroomName
+			, c.classroom_manager classroomManager
+			, c.classroom_capacity classroomCapacity
+			, e.employee_no employeeNo
+			, e.employee_name employeeName
+			, file_name photoFileName
+			, file_ext photoFileExt
+		FROM classroom c Join employee e on c.classroom_manager = e.employee_no
+		Join file on e.photo_file_no = file.file_no 
+	</select>
+</mapper>

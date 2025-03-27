@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.CalendarMapper">
+
+	<!-- 진수우 : 마이페이지의 캘랜더에서 근태목록 조회 -->
+	<select id="selectAttendanceList">
+		SELECT 
+			(SELECT name FROM common WHERE code = aa.attendance_approval_type) attendanceApprovalTypeName
+		    , attendance_approval_begindate attendanceApprovalBegindate
+			, attendance_approval_enddate attendanceApprovalEnddate
+		FROM attendance_approval aa
+		WHERE employee_no = #{employeeNo} AND attendance_approval_status = 'AS003' AND use_yn = 1
+	</select>
+
+	<!-- 진수우 : 마이페이지의 캘랜더에서 강의목록 조회 -->
+	<select id="selectLectureList" parameterType="Integer">
+		SELECT 
+		    l.lecture_name lectureName
+		    , l.lecture_begin_date lectureBeginDate
+		    , l.lecture_end_date lectureEndDate
+		    , l.lecture_content lectureContent
+		    , GROUP_CONCAT(DISTINCT (SELECT CASE 
+									WHEN name = '월' THEN 'mo' 
+									WHEN name = '화' THEN 'tu' 
+									WHEN name = '수' THEN 'we' 
+									WHEN name = '목' THEN 'th' 
+									WHEN name = '금' THEN 'fr' 
+									WHEN name = '토' THEN 'sa' 
+									WHEN name = '일' THEN 'su' 
+									ELSE name
+								END 
+								FROM common WHERE code =  lw.weekday_code) ORDER BY lw.lecture_weekday_no) weekdayCode
+		    , GROUP_CONCAT((SELECT name FROM common WHERE code = lw.begin_time_code) ORDER BY lw.lecture_weekday_no) beginTimeCode
+		    , GROUP_CONCAT((SELECT name FROM common WHERE code = lw.end_time_code) ORDER BY lw.lecture_weekday_no) endTimeCode
+		FROM lecture l
+		LEFT JOIN lecture_lecture_weekday llw ON llw.lecture_no = l.lecture_no
+		LEFT JOIN lecture_weekday lw ON lw.lecture_weekday_no = llw.lecture_weekday_no
+		WHERE l.lecturer = #{employeeNo} AND use_yn = 1
+		GROUP BY l.lecture_no
+	</select>
+	
+	<!-- 진수우 : 마이페이지의 캘랜더에서 회의목록 조회 -->
+	<select id="selectReservationList" parameterType="Integer">
+		SELECT 
+			r.reservation_title reservationTitle
+			, (SELECT name FROM common WHERE code = r.begin_time_code) beginTimeName
+			, (SELECT name FROM common WHERE code = r.end_time_code) endTimeName
+			, r.reservation_date reservationDate
+			, r.reservation_content reservationContent
+		FROM reservation r
+		WHERE reservation_person = #{employeeNo}
+		UNION
+		SELECT
+			(SELECT reservation_title FROM reservation r WHERE reservation_no = re.reservation_no) reservationTitle
+		    , (SELECT (SELECT name FROM common WHERE code = r.begin_time_code) FROM reservation r WHERE reservation_no = re.reservation_no) beginTime
+		    , (SELECT (SELECT name FROM common WHERE code = r.end_time_code) FROM reservation r WHERE reservation_no = re.reservation_no) endTime
+		    , (SELECT reservation_date FROM reservation r WHERE reservation_no = re.reservation_no) reservationDate
+		    , (SELECT reservation_content FROM reservation r WHERE reservation_no = re.reservation_no) reservationContent
+		FROM reservation_employee re
+		WHERE employee_no = #{employeeNo}
+	</select>
+</mapper>

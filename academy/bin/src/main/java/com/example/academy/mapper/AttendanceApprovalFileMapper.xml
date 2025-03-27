@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.AttendanceApprovalFileMapper">
+	
+	<!-- 김혜린 : 근태신청서 수정 시 근태결재/파일 연결테이블 해당 정보 삭제 -->
+	<delete id="deleteAttendanceApprovalFile">
+		DELETE FROM attendance_approval_file
+		WHERE attendance_approval_no = #{attendanceApprovalNo}
+		AND file_no = #{fileNo}
+	</delete>
+	
+	<!-- 김혜린 : 근태신청서 상세페이지 파일목록 출력, 수정페이지 파일 불러오기 -->
+	<select id="selectAttendanceApprovalFileList" parameterType="Integer" resultType="com.example.academy.vo.Files">
+		SELECT 
+			f.file_no fileNo
+			, f.file_name fileName
+			, f.file_ext fileExt
+			, f.file_origin fileOrigin
+			, f.file_size fileSize
+		FROM file f LEFT OUTER JOIN attendance_approval_file af
+		ON f.file_no = af.file_no
+		WHERE af.attendance_approval_no = #{attendanceApprovalNo}
+	</select>	
+
+	<!-- 김혜린 : 근태신청서 파일추가 -->
+	<insert id="insertAttendanceApprovalFile" parameterType="com.example.academy.dto.AttendanceApprovalAddDTO">
+		INSERT INTO attendance_approval_file(
+			attendance_approval_no
+			, file_no
+			)
+		VALUES (
+			#{attendanceApprovalNo}
+			, #{fileNo}
+			)
+	</insert>
+</mapper>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.NoticeMapper">
+
+	<!-- 진수우 : 전체 알림 조회 -->
+	<select id="selectAllNotice">
+		SELECT
+			notice_no noticeNo
+			, notice_content noticeContent
+			, create_date createDate
+		FROM notice
+		WHERE employee_no = #{employeeNo} AND use_yn = 1
+		ORDER BY notice_no DESC
+	</select>
+	
+	<!-- 진수우 : 최근 알림 조회 -->
+	<select id="selectNewNotice">
+		SELECT
+			notice_no noticeNo
+			, notice_content noticeContent
+			, create_date createDate
+		FROM notice
+		WHERE employee_no = #{employeeNo} AND use_yn = 1
+		ORDER BY notice_no DESC
+		LIMIT 5
+	</select>
+
+	<!-- 진수우 : 알림저장 -->
+	<insert id="insertNotice">
+		INSERT INTO notice(employee_no, notice_content, notice_type) VALUES(#{employeeNo}, #{noticeContent}, #{noticeType})
+	</insert>
+	
+	<!-- 진수우 : 알림삭제 -->
+	<update id="deleteNotice">
+		UPDATE notice SET use_yn = 0 WHERE notice_no = #{noticeNo}
+	</update>
+</mapper>

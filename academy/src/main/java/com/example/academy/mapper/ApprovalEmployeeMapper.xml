@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.ApprovalEmployeeMapper">
+		
+	<!-- 김혜린 : 근태신청서 총 결재자 수 구하기 -->
+	<select id="selectTotalApprover" parameterType = "com.example.academy.dto.AttendanceApprovalOneDTO" resultType="Integer">
+		SELECT COUNT(*)
+		FROM approval_employee
+		WHERE attendance_approval_no = #{attendanceApprovalNo}
+		GROUP BY attendance_approval_no
+	</select>
+	
+	<!-- 김혜린 : 근태신청서 결재 승인시 - 결재자 상태 업데이트 -->
+	<update id="updateApprovalStatusAgree" parameterType="com.example.academy.dto.AttendanceApprovalOneDTO">
+		UPDATE approval_employee
+		SET approval_employee_status = 'AS003'
+		WHERE attendance_approval_no = #{attendanceApprovalNo}
+		AND approver = #{approver}
+	</update>
+	
+	<!-- 김혜린 : 근태신청서 결재 반려시 - 결재자 상태 업데이트 -->
+	<update id="updateApprovalStatusReject" parameterType="com.example.academy.dto.AttendanceApprovalOneDTO">
+		UPDATE approval_employee
+		SET approval_employee_status = 'AS002'
+		WHERE attendance_approval_no = #{attendanceApprovalNo}
+		AND approver = #{approver}
+	</update>
+	
+	<!-- 김혜린 : 근태신청서 상세페이지 - 결재자 목록 -->
+	<select id="approverList" parameterType="Integer" resultType="com.example.academy.dto.AttendanceApprovalOneDTO">
+		SELECT 
+			ae.attendance_approval_no attendanceApprovalNo
+			, ae.approver approver
+			, e.employee_name employeeName
+			, e.employee_department employeeDepartmentCode
+			, c1.`name` employeeDepartment
+			, ae.approval_level approvalLevel
+			, ae.approval_employee_status approvalEmployeeStatusCode
+			, c2.`name` approvalEmployeeStatus
+			, f.file_name fileName
+			, f.file_ext fileExt
+		FROM approval_employee ae LEFT OUTER JOIN employee e
+		ON ae.approver = e.employee_no
+		LEFT OUTER JOIN common c1
+		ON e.employee_department = c1.`code`
+		LEFT OUTER JOIN common c2
+		ON ae.approval_employee_status = c2.`code`
+		LEFT OUTER JOIN file f
+		ON e.stamp_file_no = f.file_no
+		WHERE ae.attendance_approval_no = #{attendanceApprovalNo}
+	</select>
+
+	<!-- 김혜린 : 근태신청서 결재자 추가 -->
+	<insert id="insertAttendanceApprovalEmployee" parameterType="com.example.academy.dto.AttendanceApprovalAddDTO" useGeneratedKeys="true" keyProperty="approvalEmployeeNo">
+		INSERT INTO approval_employee(
+			attendance_approval_no
+			, approver
+			, approval_level
+			)
+		VALUES (
+			#{attendanceApprovalNo}
+			, #{approver}
+			, #{approvalLevel}
+			)
+	</insert>
+	
+	<!-- 김혜린 : 근태신청서 수정 - 결재자 삭제 -->
+	<delete id="deleteAttendanceApprovalEmployee" parameterType="com.example.academy.dto.AttendanceApprovalAddDTO">
+		DELETE FROM approval_employee
+		WHERE attendance_approval_no = #{attendanceApprovalNo}
+			AND approver = #{approver}
+			AND approval_level = #{approvalLevel}
+	</delete>
+</mapper>

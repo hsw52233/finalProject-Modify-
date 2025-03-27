@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.ScheduledMapper">
+	
+	<!-- 주말 23시 59분에 출퇴 NULL인 데이터 휴일처리 -->
+	<update id="updateContentByHoliday" parameterType="Integer">
+		UPDATE attendance
+		SET attendance_content = 'CT008'
+		WHERE employee_no = #{employeeNo}
+			AND attendance_date = CURDATE()
+			AND attendance_checkin IS NULL
+			AND attendance_checkout IS NULL
+	</update>
+	
+	<!-- 매일 23시 59분에 유형 NULL이고, 출퇴근시간이 비정상일 시 비정상출근처리 -->
+	<update id="updateContentByAbnormal" parameterType="Integer">
+		UPDATE attendance
+		SET attendance_content = 'CT011'
+		WHERE employee_no = #{employeeNo}
+			AND attendance_date = CURDATE()
+			AND attendance_content IS null
+	</update>
+	
+	<!-- 매일 23시 59분에 출퇴,유형 NULL인 데이터 결석처리 -->
+	<update id="updateContentByAbsence" parameterType="Integer">
+		UPDATE attendance
+		SET attendance_content = 'CT007'
+		WHERE employee_no = #{employeeNo}
+			AND attendance_date = CURDATE()
+			AND attendance_checkin IS NULL
+			AND attendance_checkout IS NULL
+			AND attendance_content IS null
+	</update>
+	
+	<!-- 근태 근태유형/출퇴시간변경(근태신청서가 있을 시 연차,병가,휴일 등) -->
+	<update id="updateAttendanceByCheckTime" parameterType="com.example.academy.dto.AttendanceDTO">
+		UPDATE attendance
+        SET attendance_content = #{attendanceContent}
+        	, attendance_checkin = CONCAT(CURDATE(), ' 00:00:00')
+            , attendance_checkout = CONCAT(CURDATE(), ' 00:00:00')
+        WHERE employee_no = #{employeeNo}
+        AND attendance_date = CURDATE()
+	</update>
+	
+	<!-- 근태 근태유형 변경(근태신청서가 있을 시 오전,오후 반차) -->
+	<update id="updateAttendance" parameterType="com.example.academy.dto.AttendanceDTO">
+		UPDATE attendance
+        SET attendance_content = #{attendanceContent}
+        WHERE employee_no = #{employeeNo}
+        AND attendance_date = CURDATE()
+	</update>
+	
+	<!-- 오늘 근태신청서 근태유형 조회 -->
+	<select id="selectContent" parameterType="Integer"
+							resultType="String">
+		SELECT 
+			attendance_approval_type content
+		FROM attendance_approval a
+		WHERE employee_no = #{employeeNo}
+			AND use_yn = 1
+			AND attendance_approval_begindate &lt;= CURDATE()
+			AND attendance_approval_enddate &gt;= CURDATE()
+			AND attendance_approval_status = 'AS003'
+	</select>
+	
+	<!-- 근태 생성 -->
+	<insert id="insertAttendance" parameterType="Integer">
+		INSERT INTO attendance (employee_no) VALUES (#{employeeNo});
+	</insert>
+
+</mapper>

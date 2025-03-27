@@ -1,0 +1,612 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.LectureApprovalMapper">
+
+	<!-- 김혜린 : 결재 완료 목록 - 강의신청서 리스트 조회 -->
+	<select id="selectCompleteLectureApprovalList" parameterType="Integer" resultType="com.example.academy.dto.LectureApprovalListDTO">
+		SELECT 
+			la.lecture_approval_no lectureApprovalNo
+			, la.lecture_approval_title lectureApprovalTitle
+			, la.lecturer lecturer
+			, e.employee_name employeeName
+			, la.lecture_approval_status lectureApprovalStatusCode
+			, c1.`name` lectureApprovalStatus
+			, ae.approver approver
+		FROM lecture_approval la LEFT OUTER JOIN employee e
+			ON la.lecturer = e.employee_no
+		LEFT OUTER JOIN common c1
+			ON la.lecture_approval_status = c1.`code`
+		LEFT OUTER JOIN approval_employee ae
+			ON ae.lecture_approval_no = la.lecture_approval_no
+		WHERE la.use_yn = 1
+			AND ae.approver = #{employeeNo}
+			AND ae.approval_employee_status NOT IN ('AS001')
+		ORDER BY la.create_date DESC
+	</select>
+	
+	<!-- 김혜린 : 결재 대기 목록 - 강의신청서 리스트 조회 -->
+	<select id="selectWaitLectureApprovalList" parameterType="Integer" resultType="com.example.academy.dto.LectureApprovalListDTO">
+		SELECT 
+			la.lecture_approval_no lectureApprovalNo
+			, la.lecture_approval_title lectureApprovalTitle
+			, la.lecturer lecturer
+			, e.employee_name employeeName
+			, la.lecture_approval_status lectureApprovalStatusCode
+			, c1.`name` lectureApprovalStatus
+			, ae.approver approver
+			, la.lecture_approval_step lectureApprovalStep
+			, ae.approval_level approvalLevel
+		FROM lecture_approval la LEFT OUTER JOIN employee e
+		ON la.lecturer = e.employee_no
+		LEFT OUTER JOIN common c1
+		ON la.lecture_approval_status = c1.`code`
+		LEFT OUTER JOIN approval_employee ae
+		ON ae.lecture_approval_no = la.lecture_approval_no
+		WHERE la.use_yn = 1
+		AND ae.approver = #{employeeNo}
+		AND la.lecture_approval_status = 'AS001'
+		AND la.lecture_approval_step = ae.approval_level
+		ORDER BY la.create_date DESC
+	</select>
+	
+	<!--  김혜린 : 나의 신청 목록 - 강의신청서 리스트 조회-->
+	<select id="selectLectureApprovalList" parameterType="Integer" resultType="com.example.academy.dto.LectureApprovalListDTO">
+		SELECT 
+			la.lecture_approval_no lectureApprovalNo
+			, la.lecture_approval_title lectureApprovalTitle
+			, la.lecturer lecturer
+			, e.employee_name employeeName
+			, la.lecture_approval_status lectureApprovalStatusCode
+			, c1.`name` lectureApprovalStatus
+		FROM lecture_approval la LEFT OUTER JOIN employee e
+		ON la.lecturer = e.employee_no
+		LEFT OUTER JOIN common c1
+		ON la.lecture_approval_status = c1.code
+		WHERE la.use_yn = 1
+		AND la.lecturer = #{employeeNo}
+		ORDER BY la.create_date DESC
+	</select>
+
+	<!-- 진수우 : 강의결재 승인처리 시 결재 테이블에서 해당 결재의 결재상태를 변경 -->
+	<update id="updateLectureApprovalStatusAccept">
+		UPDATE lecture_approval SET lecture_approval_status = 'AS003' WHERE lecture_approval_no = #{lectureApprovalNo}
+	</update>
+
+	<!-- 진수우 : 강의결재 승인처리 시 결재자 테이블에서 최고 결재단계를 조회 -->
+	<select id="selectApprovalEmployeeMaxLevel">
+		SELECT MAX(approval_level)
+		FROM approval_employee
+		WHERE lecture_approval_no = #{lectureApprovalNo}
+	</select>
+	
+	<!-- 진수우 : 강의결재 승인처리 시 결재자 테이블에서 결재상태가 승인인 항목 개수 조회 -->
+	<select id="countApprovalEmployeeStatusAccept">
+		SELECT COUNT(*)
+		FROM approval_employee
+		WHERE lecture_approval_no = #{lectureApprovalNo} AND approval_employee_status = 'AS003'
+	</select>
+	
+	<!-- 진수우 : 강의결재 승인처리 시 결재자 테이블에서 해당 결재자의 결재상태를 변경 -->
+	<update id="updateApprovalEmployeeStatusAccept">
+		UPDATE approval_employee SET approval_employee_status = 'AS003' WHERE lecture_approval_no = #{lectureApprovalNo} AND approver = #{approver}
+	</update>
+
+	<!-- 진수우 : 강의결재 승인처리 시 강의결재 테이블에서 해당 결재의 결재단계를 증가 -->
+	<update id="updateLectureApprovalStepAccept">
+		UPDATE lecture_approval SET lecture_approval_step = lecture_approval_step + 1
+		WHERE lecture_approval_no = #{lectureApprovalNo}
+	</update>
+	
+	
+	
+	
+	<!-- 진수우 : 강의결재 반려처리 시 결재자 테이블에서 해당 결재자의 결재상태변경 -->
+	<update id="updateApprovalEmployeeStatusReturn">
+		UPDATE approval_employee SET approval_employee_status = 'AS002' WHERE lecture_approval_no = #{lectureApprovalNo} AND approver = #{approver}
+	</update>
+
+	<!-- 진수우 : 강의결재 반려처리 시 강의결재 테이블에서 결재상태 변경 -->
+	<update id="updateLectureApprovalStatusReturn">
+		UPDATE lecture_approval SET lecture_approval_status = 'AS002', reject_reason = #{rejectReason} WHERE lecture_approval_no = #{lectureApprovalNo}
+	</update>
+
+	<!-- 진수우 : 강의결재 삭제 시 강의결재 테이블에서 사용상태변경 -->
+	<update id="updateLectureApprovalUse">
+		UPDATE lecture_approval SET use_yn = 0 WHERE lecture_approval_no = #{lectureApprovalNo}
+	</update>
+
+	<!-- 진수우 : 강의결재 수정 시 파일테이블에서 삭제할 파일번호 조회 -->
+	<select id="selectDeleteFileNo">
+		SELECT file_no fileNo
+		FROM file
+		WHERE file_name = #{fileName}
+	</select>
+
+	<!-- 진수우 : 강의결재 수정 시 강의결재/파일 연결테이블에서 해당정보 삭제 -->
+	<delete id="deleteContactLectureApprovalFile">
+		DELETE FROM lecture_approval_file
+		WHERE file_no = #{fileNo} AND lecture_approval_no = #{lectureApprovalNo}
+	</delete>
+
+	<!-- 진수우 : 강의결재 수정 시 결재자테이블에 있는 데이터 수 카운트 -->
+	<select id="countApprovalEmployee">
+		SELECT COUNT(*)
+		FROM approval_employee
+		WHERE lecture_approval_no = #{lectureApprovalNo}
+	</select>
+
+	<!-- 진수우 : 강의결재 수정 시 결재자테이블에서 수정이 안된 결재자가 있는지 확인 -->
+	<select id="selectNotChangeEmployee">
+		SELECT 1
+		FROM approval_employee
+		WHERE approver = #{approver} AND approval_level = #{approvalLevel} AND lecture_approval_no = #{lectureApprovalNo}
+	</select>
+
+	<!-- 진수우 : 강의결재 수정 시 파일테이블에서 해당정보 삭제 -->
+	<delete id="deleteLectureApprovalFile">
+		DELETE FROM file
+		WHERE file_name = #{fileName}
+	</delete>
+
+	<!-- 진수우 : 강의결재 수정 시 결재자테이블에서 결재자 삭제 (없어지거나 결재순서가 바뀐 사원만 삭제) -->
+	<delete id="deleteApprovalEmployee">
+		DELETE FROM approval_employee
+		WHERE lecture_approval_no = #{lectureApprovalNo} AND approval_level = #{approvalLevel}
+	</delete>
+	
+	<!-- 진수우 : 강의결재 수정 시 강의결재/강의시간 연결테이블에서 해당정보 모두 삭제 -->
+	<delete id="deleteLectureApprovalLectureWeekday">
+		DELETE FROM lecture_approval_lecture_weekday
+		WHERE lecture_approval_no = #{lectureApprovalNo}
+	</delete>
+
+	<!-- 진수우 : 강의결재 수정 시 강의시간테이블에서 해당정보 모두 삭제(삭제 후 수정한 새로운 데이터 재삽입 예정) -->
+	<delete id="deleteLectureWeekday">
+		DELETE FROM lecture_weekday
+		WHERE lecture_weekday_no IN (SELECT lecture_weekday_no
+									FROM lecture_approval_lecture_weekday
+									WHERE lecture_approval_no = #{lectureApprovalNo})
+	</delete>
+
+	<!-- 진수우 : 강의결재 수정 시 강의결재테이블에서 해당정보 수정 -->
+	<update id="updateLectureApproval">
+		UPDATE lecture_approval
+		SET 
+			lecture_approval_title = #{lectureApprovalTitle}
+			, lecture_approval_content = #{lectureApprovalContent}
+			, lecture_name = #{lectureName}
+			, lecture_content = #{lectureContent}
+			, classroom_no = #{classroomNo}
+			, lecture_begin_date = #{lectureBeginDate}
+			, lecture_end_date = #{lectureEndDate}
+		WHERE lecture_approval_no = #{lectureApprovalNo}
+	</update>
+
+	<!-- 진수우 : 강의결재 상세, 수정페이지에서 결재자 출력 -->
+	<select id="selectLectureApprovalEmployee">
+		SELECT 
+			ae.approval_employee_no approvalEmployee
+			, ae.lecture_approval_no lectureApprovalNo
+			, e.employee_name approver
+			, (SELECT name FROM common c WHERE e.employee_department = c.code) departmentName
+			, ae.approver approverNo
+			, ae.approval_level approvalLevel
+			, ae.approval_employee_status approvalEmployeeStatus
+			, c.name approvalEmployeeStatusName
+			, f.file_name stampFileName
+			, f.file_ext stampFileExt
+		FROM approval_employee ae
+		LEFT OUTER JOIN employee e ON ae.approver = e.employee_no
+		LEFT OUTER JOIN file f ON f.file_no = e.stamp_file_no
+		LEFT OUTER JOIN common c ON c.code = ae.approval_employee_status
+		WHERE ae.lecture_approval_no = #{lectureApprovalNo}
+		ORDER BY approval_level ASC
+	</select>
+
+	<!-- 진수우 : 강의결재 상세, 수정페이지에서 파일 출력 -->
+	<select id="selectLectureApprovalFile">
+		SELECT
+			f.file_no fileNo
+			, f.file_name fileName
+			, f.file_ext fileExt
+			, f.file_origin fileOrigin
+			, f.file_size fileSize
+			, f.file_type fileType
+			, f.file_category fileCategory
+			, f.create_date createDate
+			, f.update_date updateDate
+		FROM file f
+		LEFT OUTER JOIN lecture_approval_file laf ON f.file_no = laf.file_no
+		LEFT OUTER JOIN lecture_approval la ON laf.lecture_approval_no = la.lecture_approval_no
+		WHERE la.lecture_approval_no = #{lectureApprovalNo}
+	</select>
+
+	<!-- 진수우 : 강의결재 상세, 수정페이지에서 강의시간 출력 -->
+	<select id="selectLectureApprovalWeekday">
+		SELECT 
+			lw.lecture_weekday_no lectureWeekdayNo
+			, cw.name weekday
+			, cb.name beginTime
+			, ce.name endTime
+			, cw.code weekdayCode
+			, cb.code beginTimeCode
+			, ce.code endTimeCode
+		FROM lecture_weekday lw
+		LEFT OUTER JOIN lecture_approval_lecture_weekday lalw ON lw.lecture_weekday_no = lalw.lecture_weekday_no
+		LEFT OUTER JOIN lecture_approval la ON lalw.lecture_approval_no = la.lecture_approval_no
+		LEFT OUTER JOIN common cb ON cb.code = lw.begin_time_code
+		LEFT OUTER JOIN common ce ON ce.code = lw.end_time_code
+		LEFT OUTER JOIN common cw ON cw.code = lw.weekday_code
+		WHERE la.lecture_approval_no = #{lectureApprovalNo}
+	</select>
+
+	<!-- 진수우 : 강의결재 상세, 수정페이지에서 강의정보 출력 -->
+	<select id="selectLectureApprovalOne">
+		SELECT 
+			la.lecture_approval_no lectureApprovalNo
+			, e.employee_name employeeName
+			, e.employee_no employeeNo
+			, la.lecture_approval_title lectureApprovalTitle
+			, la.lecture_approval_content lectureApprovalContent
+			, la.lecture_name lectureName
+			, la.lecture_content lectureContent
+			, cl.classroom_name classroomName
+			, la.classroom_no classroomNo
+			, la.lecture_begin_date lectureBeginDate
+			, la.lecture_end_date lectureEndDate
+			, la.lecture_approval_status lectureApprovalStatusCode
+			, c.name lectureApprovalStatus
+			, la.lecture_approval_step lectureApprovalStep
+			, la.reject_reason rejectReason
+			, la.create_date createDate
+			, la.update_date updateDate
+			, la.use_yn useYn
+		FROM lecture_approval la
+		LEFT OUTER JOIN classroom cl ON la.classroom_no = cl.classroom_no
+		LEFT OUTER JOIN employee e ON la.lecturer = e.employee_no
+		LEFT OUTER JOIN common c ON la.lecture_approval_status = c.code
+		WHERE la.lecture_approval_no = #{lectureApprovalNo}
+	</select>
+
+	<!-- 진수우 : 강의결재신청 시 강의결재/파일 연결테이블에 해당정보 저장 -->
+	<insert id="insertLectureApprovalFile">
+		INSERT INTO lecture_approval_file (
+			file_no
+			, lecture_approval_no
+		) VALUES (
+			#{fileNo}
+			, #{lectureApprovalNo}
+		)
+	</insert>
+
+	<!-- 진수우 : 강의결재신청 시 결재자테이블에 해당정보 저장 -->
+	<insert id="insertApprovalEmployee">
+		INSERT INTO approval_employee (
+			lecture_approval_no
+			, approver
+			, approval_level
+		) VALUES (
+			#{lectureApprovalNo}
+			, #{approver}
+			, #{approvalLevel}
+		)
+	</insert>
+	
+	<!-- 진수우 : 강의결재신청 시 강의결재테이블에 해당정보 저장 -->
+	<insert id="insertLectureApproval" useGeneratedKeys="true" keyProperty="lectureApprovalNo">
+		INSERT INTO lecture_approval (
+			lecturer
+			, lecture_approval_title
+			, lecture_approval_content
+			, lecture_name
+			, lecture_content
+			, classroom_no
+			, lecture_begin_date
+			, lecture_end_date
+		) VALUES (
+			#{lecturer}
+			, #{lectureApprovalTitle}
+			, #{lectureApprovalContent}
+			, #{lectureName}
+			, #{lectureContent}
+			, #{classroomNo}
+			, #{lectureBeginDate}
+			, #{lectureEndDate}
+		)
+	</insert>
+
+	<!-- 진수우 : 강의결재신청 시 강의결재/강의시간 연결테이블에 해당정보 저장 -->
+	<insert id="insertLectureApprovalLectureWeekday">
+		INSERT INTO lecture_approval_lecture_weekday (
+			lecture_approval_no
+			, lecture_weekday_no
+		) VALUES (
+			#{lectureApprovalNo}
+			, #{lectureWeekdayNo}
+		)
+	</insert>
+
+	<!-- 진수우 : 강의결재신청 시 강의시간테이블에 해당정보 저장 -->
+	<insert id="insertLectureWeekday" parameterType="com.example.academy.vo.LectureWeekday" useGeneratedKeys="true" keyProperty="lectureWeekdayNo">
+		INSERT INTO lecture_weekday (
+			weekday_code
+			, begin_time_code
+			, end_time_code
+		) VALUES (
+			#{weekdayCode}
+			, #{beginTimeCode}
+			, #{endTimeCode}
+		)
+	</insert>
+
+	<!-- 진수우 : 시작시간 선택 시 가능한 시간만 출력 -->
+	<select id="selectLectureApprovalGetBeginTime">
+		SELECT c.code code, c.name name
+		FROM common c
+		WHERE c.refer1 NOT IN (	
+            SELECT c_inner.refer1
+		    FROM common c_inner
+		    INNER JOIN lecture_weekday lw ON c_inner.code BETWEEN lw.begin_time_code AND lw.end_time_code
+		    INNER JOIN common cb ON lw.begin_time_code = cb.code -- 시작 시간 참조
+		    INNER JOIN common ce ON lw.end_time_code = ce.code   -- 종료 시간 참조
+		    INNER JOIN lecture_lecture_weekday llw ON llw.lecture_weekday_no = lw.lecture_weekday_no
+		    INNER JOIN lecture l ON l.lecture_no = llw.lecture_no
+		    WHERE c_inner.code LIKE 'TM%'
+		      AND c_inner.refer1 BETWEEN cb.refer1 AND (ce.refer1 - 1)
+		      AND lw.weekday_code = #{weekdayCode}
+		      AND l.classroom_no = #{classroomNo}
+		      AND l.use_yn = 1
+		      AND ((l.lecture_begin_date BETWEEN #{beginDate} AND #{endDate} OR l.lecture_end_date BETWEEN #{beginDate} AND #{endDate})
+		      OR ((#{beginDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date) AND (#{endDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date)))
+			UNION
+			SELECT c_inner.refer1
+			FROM common c_inner
+			INNER JOIN lecture_weekday lw ON c_inner.code BETWEEN lw.begin_time_code AND lw.end_time_code
+			INNER JOIN common cb ON lw.begin_time_code = cb.code -- 시작 시간 참조
+			INNER JOIN common ce ON lw.end_time_code = ce.code   -- 종료 시간 참조
+			INNER JOIN lecture_approval_lecture_weekday llw ON llw.lecture_weekday_no = lw.lecture_weekday_no
+			INNER JOIN lecture_approval l ON l.lecture_approval_no = llw.lecture_approval_no
+			WHERE c_inner.code LIKE 'TM%'
+			  AND c_inner.refer1 BETWEEN cb.refer1 AND (ce.refer1 - 1)
+			  AND lw.weekday_code = #{weekdayCode}
+			  AND l.classroom_no = #{classroomNo}
+			  AND l.use_yn = 1
+			  AND ((l.lecture_begin_date BETWEEN #{beginDate} AND #{endDate} OR l.lecture_end_date BETWEEN #{beginDate} AND #{endDate})
+			  OR ((#{beginDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date) AND (#{endDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date)))
+			  AND l.lecture_approval_status = 'AS001'
+		) AND c.code LIKE 'TM%'
+		AND c.code != 'TM010'; -- TM010 제외
+	</select>
+	
+	<!-- 진수우 : 종료시간 선택 시 가능한 시간만 출력 -->
+	<select id="selectLectureApprovalGetEndTime" parameterType="com.example.academy.dto.LectureApprovalGetBeginTimeDTO">
+		SELECT c.code code, c.name name
+		FROM common c
+		WHERE c.refer1 NOT IN (	
+            SELECT c_inner.refer1
+		    FROM common c_inner
+		    INNER JOIN lecture_weekday lw ON c_inner.code BETWEEN lw.begin_time_code AND lw.end_time_code
+		    INNER JOIN common cb ON lw.begin_time_code = cb.code -- 시작 시간 참조
+		    INNER JOIN common ce ON lw.end_time_code = ce.code   -- 종료 시간 참조
+		    INNER JOIN lecture_lecture_weekday llw ON llw.lecture_weekday_no = lw.lecture_weekday_no
+		    INNER JOIN lecture l ON l.lecture_no = llw.lecture_no
+		    WHERE c_inner.code LIKE 'TM%'
+		      AND c_inner.refer1 BETWEEN (cb.refer1 + 1) AND ce.refer1
+		      AND lw.weekday_code = #{weekdayCode}
+		      AND l.classroom_no = #{classroomNo}
+		      AND l.use_yn = 1
+		      AND ((l.lecture_begin_date BETWEEN #{beginDate} AND #{endDate} OR l.lecture_end_date BETWEEN #{beginDate} AND #{endDate})
+		      OR ((#{beginDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date) AND (#{endDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date)))
+			UNION
+			SELECT c_inner.refer1
+			FROM common c_inner
+			INNER JOIN lecture_weekday lw ON c_inner.code BETWEEN lw.begin_time_code AND lw.end_time_code
+			INNER JOIN common cb ON lw.begin_time_code = cb.code -- 시작 시간 참조
+			INNER JOIN common ce ON lw.end_time_code = ce.code   -- 종료 시간 참조
+			INNER JOIN lecture_approval_lecture_weekday llw ON llw.lecture_weekday_no = lw.lecture_weekday_no
+			INNER JOIN lecture_approval l ON l.lecture_approval_no = llw.lecture_approval_no
+			WHERE c_inner.code LIKE 'TM%'
+			  AND c_inner.refer1 BETWEEN (cb.refer1 + 1) AND ce.refer1
+			  AND lw.weekday_code = #{weekdayCode}
+			  AND l.classroom_no = #{classroomNo}
+			  AND l.use_yn = 1
+			  AND ((l.lecture_begin_date BETWEEN #{beginDate} AND #{endDate} OR l.lecture_end_date BETWEEN #{beginDate} AND #{endDate})
+			  OR ((#{beginDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date) AND (#{endDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date)))
+			  AND l.lecture_approval_status = 'AS001'
+		) AND c.code LIKE 'TM%'
+		AND c.code != 'TM001'; -- TM001 제외
+	</select>
+	
+	<!-- 진수우 : 시작시간 선택 시 가능한 시간만 출력 + 현재 수정 중인 강의시간도 출력 -->
+	<select id="selectLectureApprovalGetBeginTimeFromModify">
+		SELECT c.code code, c.name name
+		FROM common c
+		WHERE c.refer1 NOT IN (	
+            SELECT c_inner.refer1
+		    FROM common c_inner
+		    INNER JOIN lecture_weekday lw ON c_inner.code BETWEEN lw.begin_time_code AND lw.end_time_code
+		    INNER JOIN common cb ON lw.begin_time_code = cb.code -- 시작 시간 참조
+		    INNER JOIN common ce ON lw.end_time_code = ce.code   -- 종료 시간 참조
+		    INNER JOIN lecture_lecture_weekday llw ON llw.lecture_weekday_no = lw.lecture_weekday_no
+		    INNER JOIN lecture l ON l.lecture_no = llw.lecture_no
+		    WHERE c_inner.code LIKE 'TM%'
+		      AND c_inner.refer1 BETWEEN cb.refer1 AND (ce.refer1 - 1)
+		      AND lw.weekday_code = #{weekdayCode}
+		      AND l.classroom_no = #{classroomNo}
+		      AND l.use_yn = 1
+		      AND ((l.lecture_begin_date BETWEEN #{beginDate} AND #{endDate} OR l.lecture_end_date BETWEEN #{beginDate} AND #{endDate})
+		      OR ((#{beginDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date) AND (#{endDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date)))
+			UNION
+			SELECT c_inner.refer1
+			FROM common c_inner
+			INNER JOIN lecture_weekday lw ON c_inner.code BETWEEN lw.begin_time_code AND lw.end_time_code
+			INNER JOIN common cb ON lw.begin_time_code = cb.code -- 시작 시간 참조
+			INNER JOIN common ce ON lw.end_time_code = ce.code   -- 종료 시간 참조
+			INNER JOIN lecture_approval_lecture_weekday llw ON llw.lecture_weekday_no = lw.lecture_weekday_no
+			INNER JOIN lecture_approval l ON l.lecture_approval_no = llw.lecture_approval_no
+			WHERE c_inner.code LIKE 'TM%'
+			  AND c_inner.refer1 BETWEEN cb.refer1 AND (ce.refer1 - 1)
+			  AND lw.weekday_code = #{weekdayCode}
+			  AND l.classroom_no = #{classroomNo}
+			  AND l.use_yn = 1
+			  AND ((l.lecture_begin_date BETWEEN #{beginDate} AND #{endDate} OR l.lecture_end_date BETWEEN #{beginDate} AND #{endDate})
+			  OR ((#{beginDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date) AND (#{endDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date)))
+			  AND l.lecture_approval_status = 'AS001'
+		) AND c.code LIKE 'TM%'
+		AND c.code != 'TM010' -- TM010 제외
+		UNION
+		SELECT cb.code, cb.name
+		FROM lecture_weekday lw
+		LEFT OUTER JOIN lecture_approval_lecture_weekday lalw ON lw.lecture_weekday_no = lalw.lecture_weekday_no
+		LEFT OUTER JOIN lecture_approval la ON lalw.lecture_approval_no = la.lecture_approval_no
+		LEFT OUTER JOIN common cb ON cb.code = lw.begin_time_code
+		LEFT OUTER JOIN common cw ON cw.code = lw.weekday_code
+		WHERE la.lecture_approval_no = #{lectureApprovalNo} AND cw.code = #{weekdayCode}
+		ORDER BY code
+	</select>
+	
+	<!-- 진수우 : 종료시간 선택 시 가능한 시간만 출력 + 현재 수정 중인 강의시간도 출력 -->
+	<select id="selectLectureApprovalGetEndTimeFromModify" parameterType="com.example.academy.dto.LectureApprovalGetBeginTimeDTO">
+		SELECT c.code code, c.name name
+		FROM common c
+		WHERE c.refer1 NOT IN (	
+            SELECT c_inner.refer1
+		    FROM common c_inner
+		    INNER JOIN lecture_weekday lw ON c_inner.code BETWEEN lw.begin_time_code AND lw.end_time_code
+		    INNER JOIN common cb ON lw.begin_time_code = cb.code -- 시작 시간 참조
+		    INNER JOIN common ce ON lw.end_time_code = ce.code   -- 종료 시간 참조
+		    INNER JOIN lecture_lecture_weekday llw ON llw.lecture_weekday_no = lw.lecture_weekday_no
+		    INNER JOIN lecture l ON l.lecture_no = llw.lecture_no
+		    WHERE c_inner.code LIKE 'TM%'
+		      AND c_inner.refer1 BETWEEN (cb.refer1 + 1) AND ce.refer1
+		      AND lw.weekday_code = #{weekdayCode}
+		      AND l.classroom_no = #{classroomNo}
+		      AND l.use_yn = 1
+		      AND ((l.lecture_begin_date BETWEEN #{beginDate} AND #{endDate} OR l.lecture_end_date BETWEEN #{beginDate} AND #{endDate})
+		      OR ((#{beginDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date) AND (#{endDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date)))
+			UNION
+			SELECT c_inner.refer1
+			FROM common c_inner
+			INNER JOIN lecture_weekday lw ON c_inner.code BETWEEN lw.begin_time_code AND lw.end_time_code
+			INNER JOIN common cb ON lw.begin_time_code = cb.code -- 시작 시간 참조
+			INNER JOIN common ce ON lw.end_time_code = ce.code   -- 종료 시간 참조
+			INNER JOIN lecture_approval_lecture_weekday llw ON llw.lecture_weekday_no = lw.lecture_weekday_no
+			INNER JOIN lecture_approval l ON l.lecture_approval_no = llw.lecture_approval_no
+			WHERE c_inner.code LIKE 'TM%'
+			  AND c_inner.refer1 BETWEEN (cb.refer1 + 1) AND ce.refer1
+			  AND lw.weekday_code = #{weekdayCode}
+			  AND l.classroom_no = #{classroomNo}
+			  AND l.use_yn = 1
+			  AND ((l.lecture_begin_date BETWEEN #{beginDate} AND #{endDate} OR l.lecture_end_date BETWEEN #{beginDate} AND #{endDate})
+			  OR ((#{beginDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date) AND (#{endDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date)))
+			  AND l.lecture_approval_status = 'AS001'
+		) AND c.code LIKE 'TM%'
+		AND c.code != 'TM001' -- TM001 제외
+		UNION
+		SELECT ce.code, ce.name
+		FROM lecture_weekday lw
+		LEFT OUTER JOIN lecture_approval_lecture_weekday lalw ON lw.lecture_weekday_no = lalw.lecture_weekday_no
+		LEFT OUTER JOIN lecture_approval la ON lalw.lecture_approval_no = la.lecture_approval_no
+		LEFT OUTER JOIN common ce ON ce.code = lw.end_time_code
+		LEFT OUTER JOIN common cw ON cw.code = lw.weekday_code
+		WHERE la.lecture_approval_no = #{lectureApprovalNo} AND cw.code = #{weekdayCode}
+		ORDER BY code
+	</select>
+	
+	<!-- 진수우 : 시작시간 선택 시 가능한 시간만 출력 + 현재 수정 중인 강의시간도 출력(강의수정) -->
+	<select id="selectLectureApprovalGetBeginTimeFromLectureModify">
+		SELECT c.code code, c.name name
+		FROM common c
+		WHERE c.refer1 NOT IN (	
+            SELECT c_inner.refer1
+		    FROM common c_inner
+		    INNER JOIN lecture_weekday lw ON c_inner.code BETWEEN lw.begin_time_code AND lw.end_time_code
+		    INNER JOIN common cb ON lw.begin_time_code = cb.code -- 시작 시간 참조
+		    INNER JOIN common ce ON lw.end_time_code = ce.code   -- 종료 시간 참조
+		    INNER JOIN lecture_lecture_weekday llw ON llw.lecture_weekday_no = lw.lecture_weekday_no
+		    INNER JOIN lecture l ON l.lecture_no = llw.lecture_no
+		    WHERE c_inner.code LIKE 'TM%'
+		      AND c_inner.refer1 BETWEEN cb.refer1 AND (ce.refer1 - 1)
+		      AND lw.weekday_code = #{weekdayCode}
+		      AND l.classroom_no = #{classroomNo}
+		      AND l.use_yn = 1
+		      AND ((l.lecture_begin_date BETWEEN #{beginDate} AND #{endDate} OR l.lecture_end_date BETWEEN #{beginDate} AND #{endDate})
+		      OR ((#{beginDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date) AND (#{endDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date)))
+			UNION
+			SELECT c_inner.refer1
+			FROM common c_inner
+			INNER JOIN lecture_weekday lw ON c_inner.code BETWEEN lw.begin_time_code AND lw.end_time_code
+			INNER JOIN common cb ON lw.begin_time_code = cb.code -- 시작 시간 참조
+			INNER JOIN common ce ON lw.end_time_code = ce.code   -- 종료 시간 참조
+			INNER JOIN lecture_approval_lecture_weekday llw ON llw.lecture_weekday_no = lw.lecture_weekday_no
+			INNER JOIN lecture_approval l ON l.lecture_approval_no = llw.lecture_approval_no
+			WHERE c_inner.code LIKE 'TM%'
+			  AND c_inner.refer1 BETWEEN cb.refer1 AND (ce.refer1 - 1)
+			  AND lw.weekday_code = #{weekdayCode}
+			  AND l.classroom_no = #{classroomNo}
+			  AND l.use_yn = 1
+			  AND ((l.lecture_begin_date BETWEEN #{beginDate} AND #{endDate} OR l.lecture_end_date BETWEEN #{beginDate} AND #{endDate})
+			  OR ((#{beginDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date) AND (#{endDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date)))
+			  AND l.lecture_approval_status = 'AS001'
+		) AND c.code LIKE 'TM%'
+		AND c.code != 'TM010' -- TM010 제외
+		UNION
+		SELECT cb.code, cb.name
+		FROM lecture_weekday lw
+		LEFT OUTER JOIN lecture_lecture_weekday lalw ON lw.lecture_weekday_no = lalw.lecture_weekday_no
+		LEFT OUTER JOIN lecture la ON lalw.lecture_no = la.lecture_no
+		LEFT OUTER JOIN common cb ON cb.code = lw.begin_time_code
+		LEFT OUTER JOIN common cw ON cw.code = lw.weekday_code
+		WHERE la.lecture_no = #{lectureApprovalNo} AND cw.code = #{weekdayCode}
+		ORDER BY code
+	</select>
+	
+	<!-- 진수우 : 종료시간 선택 시 가능한 시간만 출력 + 현재 수정 중인 강의시간도 출력(강의수정) -->
+	<select id="selectLectureApprovalGetEndTimeFromLectureModify" parameterType="com.example.academy.dto.LectureApprovalGetBeginTimeDTO">
+		SELECT c.code code, c.name name
+		FROM common c
+		WHERE c.refer1 NOT IN (	
+            SELECT c_inner.refer1
+		    FROM common c_inner
+		    INNER JOIN lecture_weekday lw ON c_inner.code BETWEEN lw.begin_time_code AND lw.end_time_code
+		    INNER JOIN common cb ON lw.begin_time_code = cb.code -- 시작 시간 참조
+		    INNER JOIN common ce ON lw.end_time_code = ce.code   -- 종료 시간 참조
+		    INNER JOIN lecture_lecture_weekday llw ON llw.lecture_weekday_no = lw.lecture_weekday_no
+		    INNER JOIN lecture l ON l.lecture_no = llw.lecture_no
+		    WHERE c_inner.code LIKE 'TM%'
+		      AND c_inner.refer1 BETWEEN (cb.refer1 + 1) AND ce.refer1
+		      AND lw.weekday_code = #{weekdayCode}
+		      AND l.classroom_no = #{classroomNo}
+		      AND l.use_yn = 1
+		      AND ((l.lecture_begin_date BETWEEN #{beginDate} AND #{endDate} OR l.lecture_end_date BETWEEN #{beginDate} AND #{endDate})
+		      OR ((#{beginDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date) AND (#{endDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date)))
+			UNION
+			SELECT c_inner.refer1
+			FROM common c_inner
+			INNER JOIN lecture_weekday lw ON c_inner.code BETWEEN lw.begin_time_code AND lw.end_time_code
+			INNER JOIN common cb ON lw.begin_time_code = cb.code -- 시작 시간 참조
+			INNER JOIN common ce ON lw.end_time_code = ce.code   -- 종료 시간 참조
+			INNER JOIN lecture_approval_lecture_weekday llw ON llw.lecture_weekday_no = lw.lecture_weekday_no
+			INNER JOIN lecture_approval l ON l.lecture_approval_no = llw.lecture_approval_no
+			WHERE c_inner.code LIKE 'TM%'
+			  AND c_inner.refer1 BETWEEN (cb.refer1 + 1) AND ce.refer1
+			  AND lw.weekday_code = #{weekdayCode}
+			  AND l.classroom_no = #{classroomNo}
+			  AND l.use_yn = 1
+			  AND ((l.lecture_begin_date BETWEEN #{beginDate} AND #{endDate} OR l.lecture_end_date BETWEEN #{beginDate} AND #{endDate})
+			  OR ((#{beginDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date) AND (#{endDate} BETWEEN l.lecture_begin_date AND l.lecture_end_date)))
+			  AND l.lecture_approval_status = 'AS001'
+		) AND c.code LIKE 'TM%'
+		AND c.code != 'TM001' -- TM001 제외
+		UNION
+		SELECT ce.code, ce.name
+		FROM lecture_weekday lw
+		LEFT OUTER JOIN lecture_lecture_weekday lalw ON lw.lecture_weekday_no = lalw.lecture_weekday_no
+		LEFT OUTER JOIN lecture la ON lalw.lecture_no = la.lecture_no
+		LEFT OUTER JOIN common ce ON ce.code = lw.end_time_code
+		LEFT OUTER JOIN common cw ON cw.code = lw.weekday_code
+		WHERE la.lecture_no = #{lectureApprovalNo} AND cw.code = #{weekdayCode}
+		ORDER BY code
+	</select>
+
+</mapper>

@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.AttendanceApprovalMapper">
+	
+	<!-- 김혜린 : 결재 완료 목록 - 근태신청서 조회 -->
+	<select id="selectCompleteAttendanceAprrovalList" parameterType="Integer" resultType="com.example.academy.dto.AttendanceApprovalListDTO">
+		SELECT 
+			aa.attendance_approval_no attendanceApprovalNo
+			, aa.attendance_approval_title attendanceApprovalTitle
+			, aa.attendance_approval_type attendanceApprovalTypeCode
+			, c1.`name` attendanceApprovalType
+			, aa.employee_no employeeNo
+			, e.employee_name employeeName
+			, aa.attendance_approval_status attendanceApprovalStatusCode
+			, c2.`name` attendanceApprovalStatus
+			, ae.approver approver
+		FROM attendance_approval aa LEFT OUTER JOIN employee e
+			ON aa.employee_no = e.employee_no
+		LEFT OUTER JOIN approval_employee ae
+			ON aa.attendance_approval_no = ae.attendance_approval_no
+		LEFT OUTER JOIN common c1
+			ON aa.attendance_approval_type = c1.`code`
+		LEFT OUTER JOIN common c2
+			ON aa.attendance_approval_status = c2.`code`
+		WHERE aa.use_yn = 1
+			AND ae.approver = #{employeeNo}
+			AND ae.approval_employee_status NOT IN ('AS001')
+		ORDER BY aa.create_date DESC
+	</select>
+	
+	<!-- 김혜린 : 근태신청서 현재 결재 단계step 구하기 -->
+	<select id="selectAttendanceApprovalStep" parameterType="com.example.academy.dto.AttendanceApprovalOneDTO" resultType="Integer">
+		SELECT
+			attendance_approval_step
+		FROM attendance_approval
+		WHERE attendance_approval_no = #{attendanceApprovalNo}
+	</select>
+	
+	<!-- 김혜린 : 근태신청서 결재 승인시 - 근태신청서 상태 업데이트 -->
+	<update id="updateAttendanceApprovalStatusAgree" parameterType="com.example.academy.dto.AttendanceApprovalOneDTO">
+		UPDATE attendance_approval
+		SET attendance_approval_status = 'AS003'
+		WHERE attendance_approval_no = #{attendanceApprovalNo}
+	</update>
+	
+	<!-- 김혜린 : 근태신청서 결재 승인시 - step + 1 -->
+	<update id="updateAttendanceApprovalStepPlus" parameterType="com.example.academy.dto.AttendanceApprovalOneDTO">
+		UPDATE attendance_approval
+		SET attendance_approval_step = attendance_approval_step + 1
+		WHERE attendance_approval_no = #{attendanceApprovalNo}
+	</update>
+	
+	<!-- 김혜린 : 근태신청서 결재 반려시 - 근태신청서 상태 및 반려사유 업데이트 -->
+	<update id="updateAttendanceApprovalStatusReject" parameterType="com.example.academy.dto.AttendanceApprovalOneDTO">
+		UPDATE attendance_approval
+		SET 
+			attendance_approval_status = 'AS002'
+			, reject_reason = #{rejectReason}
+		WHERE attendance_approval_no = #{attendanceApprovalNo}
+	</update>
+	
+	<!-- 조세영 : 오늘 사원의 근태신청서 근태유형 조회 -->
+	<select id="selectContentByDay" parameterType="com.example.academy.dto.AttendanceDTO">
+		SELECT 
+			attendance_approval_type
+		FROM attendance_approval
+		WHERE employee_no = #{employeeNo}
+			AND attendance_approval_begindate &lt;= #{currentDate}
+			AND attendance_approval_enddate &gt;= #{currentDate}
+			AND attendance_approval_status = 'AS003'
+	</select>
+	
+	<!-- 김혜린 : 근태신청서 삭제 - 근태신청서 사용상태를 비활성화로 바꿔줌 -->
+	<update id="updateUseAttendanceApproval">
+		UPDATE attendance_approval
+		SET use_yn = 0
+		WHERE attendance_approval_no = #{attendanceApprovalNo}
+	</update>
+	
+	<!-- 김혜린 : 근태신청서 수정 -->
+	<update id="updateAttendanceApproval" parameterType="com.example.academy.dto.AttendanceApprovalModifyDTO">
+		UPDATE attendance_approval
+		SET
+		   attendance_approval_type = #{attendanceApprovalType}
+		   , attendance_approval_begindate = #{attendanceApprovalBeginDate}
+		   , attendance_approval_enddate = #{attendanceApprovalEndDate}
+		   , attendance_approval_title = #{attendanceApprovalTitle}
+		   , attendance_approval_content = #{attendanceApprovalContent}
+		WHERE attendance_approval_no = #{attendanceApprovalNo}
+	</update>
+	
+	<!-- 김혜린 : 근태신청서 상세페이지 -->
+	<select id="selectAttendanceApprovalOne" parameterType="Integer" resultType="com.example.academy.dto.AttendanceApprovalOneDTO">
+		SELECT 
+			ap.attendance_approval_no attendanceApprovalNo
+			, ap.employee_no employeeNo
+			, e.employee_name employeeName
+			, ap.attendance_approval_type attendanceApprovalType
+			, ap.create_date createDate
+			, ap.attendance_approval_begindate attendanceApprovalBeginDate
+			, ap.attendance_approval_enddate attendanceApprovalEndDate
+			, ap.attendance_approval_title attendanceApprovalTitle
+			, ap.attendance_approval_content attendanceApprovalContent
+			, ap.attendance_approval_step attendanceApprovalStep
+			, c1.`name` attendanceApprovalStatus
+			, ap.reject_reason rejectReason
+		FROM attendance_approval ap LEFT OUTER JOIN employee e
+		ON ap.employee_no = e.employee_no
+		LEFT OUTER JOIN common c1
+		ON ap.attendance_approval_status = c1.`code`
+		WHERE ap.attendance_approval_no = #{attendanceApprovalNo}
+	</select>
+	
+	<!-- 김혜린 : 근태신청서 신청 -->
+	<insert id="insertAttendanceApproval" parameterType="com.example.academy.dto.AttendanceApprovalAddDTO" useGeneratedKeys="true" keyProperty="attendanceApprovalNo">
+		INSERT INTO attendance_approval(
+			employee_no
+			, attendance_approval_title
+			, attendance_approval_content
+			, attendance_approval_begindate
+			, attendance_approval_enddate
+			, attendance_approval_type
+			)
+		VALUES (
+			#{employeeNo}
+			, #{attendanceApprovalTitle}
+			, #{attendanceApprovalContent}
+			, #{attendanceApprovalBeginDate}
+			, #{attendanceApprovalEndDate}
+			, #{attendanceApprovalType}
+			)
+	</insert>
+	
+	<!-- 김혜린 : 결재 대기 목록 - 근태신청서 조회 -->
+	<select id="selectWaitAttendanceAprrovalList" parameterType="Integer" resultType="com.example.academy.dto.AttendanceApprovalListDTO">
+		SELECT 
+			aa.attendance_approval_no attendanceApprovalNo
+			, aa.attendance_approval_title attendanceApprovalTitle
+			, aa.attendance_approval_type attendanceApprovalTypeCode
+			, c1.`name` attendanceApprovalType
+			, aa.employee_no employeeNo
+			, e.employee_name employeeName
+			, aa.attendance_approval_status attendanceApprovalStatusCode 
+			, c2.`name` attendanceApprovalStatus
+			, ae.approver approver
+			, aa.attendance_approval_step attendanceApprovalStep
+			, ae.approval_level approvalLevel
+		FROM attendance_approval aa LEFT OUTER JOIN employee e
+		ON aa.employee_no = e.employee_no
+		LEFT OUTER JOIN common c1
+		ON aa.attendance_approval_type = c1.`code`
+		LEFT OUTER JOIN common c2
+		ON aa.attendance_approval_status = c2.`code`
+		LEFT OUTER JOIN approval_employee ae
+		ON ae.attendance_approval_no = aa.attendance_approval_no
+		WHERE aa.use_yn = 1
+		AND ae.approver = #{employeeNo}
+		AND aa.attendance_approval_status = 'AS001'
+		AND aa.attendance_approval_step = ae.approval_level
+		ORDER BY aa.create_date DESC
+	</select>
+	
+	<!-- 김혜린 : 나의 신청 목록 - 근태신청서리스트 조회 -->
+	<select id="selectAttendanceAprrovalList" parameterType="Integer" resultType="com.example.academy.dto.AttendanceApprovalListDTO">
+		SELECT 
+			aa.attendance_approval_no attendanceApprovalNo
+			, aa.attendance_approval_title attendanceApprovalTitle
+			, aa.attendance_approval_type attendanceApprovalTypeCode
+			, c1.`name` attendanceApprovalType
+			, aa.employee_no employeeNo
+			, e.employee_name employeeName
+			, aa.attendance_approval_status attendanceApprovalStatusCode
+			, c2.`name` attendanceApprovalStatus
+		FROM attendance_approval aa LEFT OUTER JOIN employee e
+		ON aa.employee_no = e.employee_no 
+		LEFT OUTER JOIN common c1
+		ON aa.attendance_approval_type = c1.code
+		LEFT OUTER JOIN common c2
+		ON aa.attendance_approval_status = c2.code
+		WHERE aa.use_yn = 1
+		AND aa.employee_no = #{employeeNo}
+		ORDER BY aa.create_date DESC
+	</select>
+	
+</mapper>

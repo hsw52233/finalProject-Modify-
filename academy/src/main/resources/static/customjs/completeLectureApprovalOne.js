@@ -1,0 +1,133 @@
+document.addEventListener('alpine:init', () => {
+    // main section
+    Alpine.data('scrollToTop', () => ({
+        showTopButton: false,
+        init() {
+            window.onscroll = () => {
+                this.scrollFunction();
+            };
+        },
+
+        scrollFunction() {
+            if (document.body.scrollTop > 50 || document.documentElement.scrollTop > 50) {
+                this.showTopButton = true;
+            } else {
+                this.showTopButton = false;
+            }
+        },
+
+        goToTop() {
+            document.body.scrollTop = 0;
+            document.documentElement.scrollTop = 0;
+        },
+    }));
+
+    // theme customization
+    Alpine.data('customizer', () => ({
+        showCustomizer: false,
+    }));
+
+    // sidebar section
+    Alpine.data('sidebar', () => ({
+        init() {
+            const selector = document.querySelector('.sidebar ul a[href="' + window.location.pathname + '"]');
+            if (selector) {
+                selector.classList.add('active');
+                const ul = selector.closest('ul.sub-menu');
+                if (ul) {
+                    let ele = ul.closest('li.menu').querySelectorAll('.nav-link');
+                    if (ele) {
+                        ele = ele[0];
+                        setTimeout(() => {
+                            ele.click();
+                        });
+                    }
+                }
+            }
+        },
+    }));
+
+    // header section
+    Alpine.data('header', () => ({
+		notifications: [],  // 빈 배열로 초기화
+			    employeeNo: employeeNo,  // 예시로 직원 번호를 하드코딩했지만, 실제 값에 맞게 설정
+
+			    // 알림 데이터를 가져오는 함수
+			    loadNotifications() {
+			        $.ajax({
+			            url: `http://${locations}:${ports}/academy/restapi/newNoticeList`,  // REST API 엔드포인트
+			            contentType: 'application/json',
+			            type: 'POST',
+			            data: JSON.stringify(this.employeeNo),  // this.employeeNo를 사용해 보내기
+			            success: (data) => {
+			                // 서버에서 받은 데이터를 notifications 배열 형식으로 변환
+			                this.notifications = data.map(item => ({
+			                    id: item.noticeNo,  // 알림 ID
+			                    message: `<span class="text-sm mr-1">${item.noticeContent}</span>`,  // 메시지
+			                    time: item.createDate,  // 시간
+			                }));
+			                console.log(this.notifications);  // 확인용
+			            },
+			            error: () => {
+			                alert("알림을 불러오는 중 오류가 발생했습니다.");
+			            }
+			        });
+			    },
+
+			    // 초기화 시 알림을 로드하는 함수
+			    init() {
+			        this.loadNotifications();  // 알림 목록 로드
+			    }
+    }));
+	
+	Alpine.data('contacts', () => ({
+		editUser(user) {
+            this.params = this.defaultParams;
+            if (user) {
+                this.params = JSON.parse(JSON.stringify(user));
+            }
+
+            this.addContactModal = true;
+        },
+	}));
+	
+	// 사원 등록 생년월일
+	document.addEventListener('DOMContentLoaded', function () {
+	    const beginDateInput = document.getElementById('beginDate');
+	    const endDateInput = document.getElementById('endDate');
+
+	    // Flatpickr 초기화 - 종강일 
+	    const endDatePicker = flatpickr(endDateInput, {
+	        dateFormat: 'Y-m-d',
+	        clickOpens: false, // 초기에는 비활성화
+	    });
+
+	    // Flatpickr 초기화 - 개강일
+	    flatpickr(beginDateInput, {
+	        dateFormat: 'Y-m-d',
+	        onChange: (selectedDates) => {
+				
+	            if (selectedDates.length > 0) {
+	                const selectedDate = selectedDates[0];
+
+	                // 종강일 캘린더 활성화 및 최소 날짜 설정
+	                endDateInput.disabled = false;
+	                endDatePicker.set('minDate', selectedDate); // 최소 날짜 설정
+	                endDatePicker.set('clickOpens', true); // 달력 활성화
+	            } else {
+	                // 개강일 선택 해제 시 종강일 초기화 및 비활성화
+	                endDatePicker.clear();
+	                endDateInput.disabled = true;
+	                endDatePicker.set('clickOpens', false); // 달력 비활성화
+	            }
+	        },
+	    });
+
+	    // 초기 상태에서 종강일 비활성화
+	    endDateInput.disabled = true;
+	});
+});
+
+
+
+

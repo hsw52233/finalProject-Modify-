@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.AuthMapper">
+
+	<!-- 진수우 : 랜덤문자 6자리로 해당 사원의 비밀번호 변경 -->
+	<update id="updatePasswordReset">
+		UPDATE employee SET employee_pw = #{newPw} WHERE employee_no = #{employeeNo}
+	</update>
+	
+	<!-- 진수우 : 입력한 사원번호, 이메일이 있는지 확인 -->
+	<select id="selectPasswordReset">
+		SELECT COUNT(*)
+		FROM employee
+		WHERE employee_no = #{employeeNo} AND employee_mail = #{email}
+	</select>
+
+	<!-- 진수우 : 사원 비밀번호 수정 -->
+	<update id="updateEmployeePw" parameterType="com.example.academy.dto.PasswordModifyDTO">
+		UPDATE employee 
+		SET employee_pw = #{employeeChangePw}
+		WHERE employee_no = #{employeeNo}
+	</update>
+
+	<!-- 진수우 : 비밀번호 수정 시 현재 비밀번호 조회. -->
+	<select id="selectEmployeeNowPw" parameterType="com.example.academy.dto.PasswordModifyDTO">
+		SELECT employee_pw
+		FROM employee
+		WHERE employee_no = #{employeeNo}
+	</select>
+
+    <!-- 진수우 : 시큐리티 로그인 시 사원 데이터베이스 조회. -->
+    <select id="findByUsername" resultType="com.example.academy.dto.AuthDTO">
+        SELECT e.employee_no employeeNo
+        , e.employee_pw employeePw
+        , e.employee_role employeeRole
+        , e.employee_mail employeeMail
+        , e.employee_name employeeName
+        , e.employee_department employeeDepartment
+        , e.employee_position employeePosition
+        , f.file_name photoFileName
+        , f.file_ext photoFileExt
+        FROM employee e
+        LEFT OUTER JOIN file f ON f.file_no = e.photo_file_no
+        WHERE employee_no = #{employeeNo}
+    </select>
+    
+</mapper>

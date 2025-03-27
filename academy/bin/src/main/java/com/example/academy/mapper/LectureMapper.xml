@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.LectureMapper">
+
+	<!-- 진수우 : 강의수정 시 강의/강의시간 연결테이블에서 기존 강의시간번호 조회 -->
+	<select id="selectLectureLectureWeekdayNo">
+		SELECT lecture_weekday_no lectureWeekdayNo
+		FROM lecture_lecture_weekday
+		WHERE lecture_no = #{lectureNo}
+	</select>
+	
+	<!-- 진수우 : 강의수정 시 강의시간 테이블에서 강의시간정보 조회 -->
+	<select id="selectLectureWeekday">
+		SELECT 
+			lecture_weekday_no lectureWeekdayNo
+			, weekday_code weekdayCode
+			, begin_time_code beginTimeCode
+			, end_time_code endTimeCode
+		FROM lecture_weekday
+		WHERE lecture_weekday_no = #{lectureWeekdayNo}
+	</select>
+	
+	<!-- 진수우 : 강의수정 시 삭제된 강의시간을 강의/강의시간 연결테이블에서 삭제 -->
+	<delete id="deleteLectureWeekday">
+		DELETE FROM lecture_lecture_weekday WHERE lecture_weekday_no = #{lectureWeekdayNo} 
+	</delete>
+	
+	<!-- 진수우 : 강의수정 시 새로 입력된 강의시간을 강의시간 테이블에 삽입 -->
+	<insert id="insertLectureWeekday" useGeneratedKeys="true" keyProperty="lectureWeekdayNo">
+		INSERT INTO lecture_weekday(weekday_code, begin_time_code, end_time_code) VALUES(#{weekdayCode}, #{beginTimeCode}, #{endTimeCode})
+	</insert>
+
+	<!-- 진수우 : 강의결재 승인 시 강의/강의시간 추가 -->
+	<insert id="insertLectureLectureWeekday">
+		INSERT INTO lecture_lecture_weekday(lecture_no, lecture_weekday_no) VALUES(#{lectureNo}, #{lectureWeekdayNo})
+	</insert>
+
+	<!-- 진수우 : 강의결재 승인 시 강의 추가 -->
+	<insert id="insertLecture" useGeneratedKeys="true" keyProperty="lectureNo">
+		INSERT INTO lecture(lecture_name, lecture_content, lecturer, lecture_begin_date, lecture_end_date, classroom_no)
+		VALUES(#{lectureName}, #{lectureContent}, #{employeeNo}, #{lectureBeginDate}, #{lectureEndDate}, #{classroomNo})
+	</insert>
+	
+	<!-- 김혜린 : 강의 삭제(사용여부 비활성화) -->
+	<update id="updateUseLecture">
+		UPDATE lecture 
+		SET
+			use_yn = 0
+		WHERE lecture_no = #{lectureNo}
+	</update>
+	
+	<!-- 김혜린 : 강의 수정(강의날짜(개강/종강일), 강의명, 강의내용) -->
+	<update id="updateLecture" parameterType="com.example.academy.dto.LectureModifyDTO">
+		UPDATE lecture 
+		SET
+			lecture_name = #{lectureName} 
+			, lecture_content = #{lectureContent} 
+			, lecture_begin_date = #{lectureBeginDate} 
+			, lecture_end_date = #{lectureEndDate} 
+			, lecturer = #{lecturer}
+		WHERE lecture_no = #{lectureNo}
+	</update>
+	
+	<!-- 김혜린 : 강의 상세페이지 / 강의수정 기존정보불러오기 - 강의 시간 리스트 출력 -->
+	<select id="selectLectureOneTimeList" parameterType="Integer" resultType="com.example.academy.dto.LectureOneTimeListDTO">
+		SELECT 
+			l.lecture_name lectureName
+			, llw.lecture_no lectureNo
+			, llw.lecture_weekday_no lectureWeekdayNo
+			, lw.weekday_code	weekdayCode
+			, lw.begin_time_code beginTimeCode
+			, lw.end_time_code endTimeCode
+			, l.create_date createDate
+			, l.update_date updateDate
+			, cm1.name weekday
+			, cm2.name beginTime
+			, cm3.name endTime
+		FROM lecture l LEFT OUTER JOIN lecture_lecture_weekday llw
+		ON l.lecture_no = llw.lecture_no
+		LEFT OUTER JOIN lecture_weekday lw
+		ON llw.lecture_weekday_no = lw.lecture_weekday_no
+		LEFT OUTER JOIN common cm1
+		ON lw.weekday_code = cm1.code
+		LEFT OUTER  JOIN common cm2
+		ON lw.begin_time_code = cm2.code
+		LEFT OUTER JOIN common cm3
+		ON lw.end_time_code = cm3.code
+		WHERE l.lecture_no = #{lectureNo}
+	</select>
+
+	<!-- 김혜린 : 강의 상세페이지 출력 / 강의수정 기존정보불러오기  -->
+	<select id="selectLectureOne" parameterType="Integer" resultType="com.example.academy.dto.LectureOneDTO">
+		SELECT 
+			l.lecture_no lectureNo
+			, l.lecturer lecturer
+			, e.employee_name employeeName
+			, l.lecture_name lectureName
+			, l.lecture_content lectureContent
+			, l.lecture_begin_date lectureBeginDate
+			, l.lecture_end_date lectureEndDate
+			, c.classroom_no classroomNo
+			, c.classroom_name classroomName
+			, l.create_date createDate
+			, l.update_date updateDate
+		FROM lecture l LEFT OUTER JOIN employee e
+		ON l.lecturer = e.employee_no
+		LEFT OUTER JOIN classroom c
+		ON l.classroom_no = c.classroom_no
+		WHERE l.lecture_no = #{lectureNo}
+	</select>
+	
+	<!-- 김혜린 : 강의리스트 출력 -->
+	<select id="selectLectureList" resultType="com.example.academy.dto.LectureListDTO">
+		SELECT 
+			l.lecture_no lectureNo
+			, f.file_name fileName
+			, f.file_ext fileExt
+			, l.lecturer lecturer
+			, e.employee_name employeeName
+			, l.lecture_name lectureName
+			, l.lecture_begin_date lectureBeginDate
+			, l.lecture_end_date lectureEndDate
+		FROM lecture l LEFT OUTER JOIN employee e
+		ON l.lecturer = e.employee_no
+		LEFT OUTER JOIN file f
+		ON e.photo_file_no = f.file_no
+		WHERE l.use_yn = 1
+	</select>
+
+
+</mapper>

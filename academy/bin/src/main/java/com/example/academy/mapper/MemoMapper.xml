@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.MemoMapper">
+	
+	<!-- 진수우 : 사원메모 삭제 -->
+	<delete id="deleteMemo">
+		DELETE
+		FROM memo
+		WHERE writer = #{employeeNo}
+	</delete>
+	
+	<!-- 진수우 : 사원메모 추가 -->
+	<insert id="insertMemo">
+		INSERT INTO memo(
+			memo_content
+			, writer
+		) VALUES (
+			#{memoContent}
+			, #{writer}
+		)
+	</insert>
+	
+	<!-- 진수우 : 사원메모 수정 -->
+	<update id="updateMemo">
+		UPDATE memo SET memo_content = #{memoContent}
+		WHERE writer = #{writer}
+	</update>
+	
+	<!-- 진수우 : 사원메모 조회 -->
+	<select id="selectMemo">
+		SELECT 
+			memo_content memoContent
+		FROM memo
+		WHERE writer = #{writer}
+	</select>
+	
+</mapper>

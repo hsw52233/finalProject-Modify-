@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.AnnualLeaveMapper">
+	
+	<!-- 최근 6개월 월당 연차 개수 조회 -->
+	<select id="annualLeaveCountByMonth" parameterType="Integer"
+										 resultType="Double">
+		<!-- 최근 6개월 데이터를 생성하기 위한 CTE -->
+		WITH RECURSIVE month_range AS (
+		    SELECT DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 5 MONTH), '%Y-%m-01') AS first_date <!-- 6개월 전의 첫날 -->
+		    UNION ALL
+		    SELECT DATE_ADD(first_date, INTERVAL 1 MONTH)
+		    FROM month_range
+		    WHERE first_date &lt; DATE_FORMAT(NOW(), '%Y-%m-01') <!-- 이번 달까지 생성 -->
+		),
+		<!-- 날짜 범위를 생성하기 위한 CTE -->
+		date_range AS (
+		    SELECT 
+		        attendance_approval_no,
+		        attendance_approval_begindate AS date,
+		        attendance_approval_enddate
+		    FROM attendance_approval
+		    WHERE use_yn = 1
+		      AND attendance_approval_begindate &lt; NOW()
+		    UNION ALL
+		    SELECT 
+		        attendance_approval_no,
+		        DATE_ADD(date, INTERVAL 1 DAY),
+		        attendance_approval_enddate
+		    FROM date_range
+		    WHERE DATE_ADD(date, INTERVAL 1 DAY) &lt;= attendance_approval_enddate
+		)
+		<!-- 최종 결과 쿼리 -->
+		SELECT
+		    COALESCE(SUM(CASE 
+		        WHEN name.name = '연차' THEN (
+		            SELECT COUNT(*)
+		            FROM date_range dr
+		            WHERE dr.attendance_approval_no = ap.attendance_approval_no
+		              AND DAYOFWEEK(dr.date) NOT IN (1, 7) <!-- 주말 제외 -->
+		        )
+		        WHEN name.name = '오전반차' THEN 0.5  <!-- 오전반차 처리 -->
+		        WHEN name.name = '오후반차' THEN 0.5  <!-- 오후반차 처리 -->
+		        ELSE 0
+		    END), 0) AS count <!-- 값이 없을 경우 0으로 처리 -->
+		FROM month_range m
+		LEFT JOIN attendance_approval ap 
+		    ON DATE_FORMAT(ap.attendance_approval_begindate, '%Y-%m') = DATE_FORMAT(m.first_date, '%Y-%m') <!-- 월별로 결합 -->
+		LEFT JOIN employee e 
+		    ON e.employee_no = ap.employee_no
+		LEFT JOIN common name 
+		    ON name.code = ap.attendance_approval_type
+		LEFT JOIN common status 
+		    ON status.code = ap.attendance_approval_status
+		WHERE (ap.use_yn IS NULL OR ap.use_yn = 1) <!-- 결합되지 않은 경우에도 포함 -->
+		  AND (e.employee_no IS NULL OR e.employee_no = #{employeeNo}) <!-- 특정 직원 조건 -->
+		  AND (status.name IS NULL OR status.name IN ('승인', '대기')) <!-- 상태 조건 -->
+		  AND (name.name IS NULL OR name.name IN ('연차', '오전반차', '오후반차')) <!-- '연차', '오전반차', '오후반차' 조건 -->
+		GROUP BY DATE_FORMAT(m.first_date, '%Y-%m')
+		ORDER BY DATE_FORMAT(m.first_date, '%Y-%m') <!-- 최신 월부터 출력 -->									 
+	</select>
+	
+	<!-- 년별 사용연차 개수 조회 -->
+	<select id="annualLeaveCount" parameterType="Integer"
+								  resultType="Double">
+		WITH RECURSIVE date_range AS (
+		    SELECT 
+		        attendance_approval_no,
+		        attendance_approval_begindate AS date,
+		        attendance_approval_enddate
+		    FROM attendance_approval
+		    WHERE use_yn = 1
+		      AND DATE_FORMAT(attendance_approval_begindate, '%Y') = YEAR(NOW())
+		    UNION ALL
+		    SELECT 
+		        attendance_approval_no,
+		        DATE_ADD(date, INTERVAL 1 DAY),
+		        attendance_approval_enddate
+		    FROM date_range
+		    WHERE DATE_ADD(date, INTERVAL 1 DAY) &lt;= attendance_approval_enddate
+		)
+		SELECT
+		   	IFNULL(SUM(CASE 
+					WHEN name.name = '연차' THEN (
+		            SELECT COUNT(*)
+		            FROM date_range dr
+		            WHERE dr.attendance_approval_no = ap.attendance_approval_no
+		              AND DAYOFWEEK(dr.date) NOT IN (1, 7) 
+		        )
+		        WHEN name.name = '오전반차' THEN 0.5 
+		        WHEN name.name = '오후반차' THEN 0.5
+		        ELSE 0
+		    END), 0) AS count
+		FROM attendance_approval ap
+		LEFT OUTER JOIN employee e ON e.employee_no = ap.employee_no
+		LEFT OUTER JOIN common name ON name.code = ap.attendance_approval_type
+		LEFT OUTER JOIN common status ON status.code = ap.attendance_approval_status
+		WHERE ap.use_yn = 1
+		  AND e.employee_no = #{employeeNo}
+		  AND DATE_FORMAT(ap.attendance_approval_begindate, '%Y') = YEAR(NOW())
+		  AND (status.name = '승인' OR status.name = '대기')
+		  AND (name.name IN ('연차', '오전반차', '오후반차'))  
+	</select>
+	
+	<!-- 월별 연차리스트 -->
+	<select id="selectAnnualLeave" parameterType="com.example.academy.dto.AnnualLeaveListDTO"
+								   resultType="com.example.academy.dto.AnnualLeaveListDTO">
+		SELECT
+		    ap.attendance_approval_no approvalNo,
+		    ap.attendance_approval_begindate begindate,
+		    ap.attendance_approval_enddate enddate,
+		    ap.create_date createDate,
+		    ap.update_date updateDate,
+		    name.name
+		FROM attendance_approval ap
+		INNER JOIN employee e ON e.employee_no = ap.employee_no
+		INNER JOIN common name ON name.`code` = ap.attendance_approval_type
+		INNER JOIN common status ON status.`code` = ap.attendance_approval_status
+		WHERE ap.use_yn = 1
+			AND ap.employee_no = #{employeeNo}
+		    AND DATE_FORMAT(ap.attendance_approval_begindate, '%Y-%m') = #{month} <!-- ex) 2025-01월 데이터만 조회 -->
+		    AND status.name = '승인'
+		    AND (name.name = '연차' OR name.name = '오전반차' OR name.name = '오후반차')
+		    AND ap.attendance_approval_begindate &lt; NOW()
+	</select>
+	
+</mapper>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.FilesMapper">
+
+	<!-- 진수우 : 강의결재 재신청 시 파일테이블에서 복사할 파일 정보조회 -->
+	<select id="selectCopyFile">
+		SELECT 
+			file_origin fileOrigin
+			, file_name fileName
+			, file_ext fileExt
+			, file_type fileType
+			, file_size fileSize
+			, file_category fileCategory
+		FROM file
+		WHERE file_name = #{fileName}
+	</select>
+	
+	<!-- 김혜린 : 근태신청서 수정 시 파일테이블에서 해당정보 삭제 -->
+	<delete id="deleteFile">
+		DELETE FROM file
+		WHERE file_name = #{fileName}	
+	</delete>
+
+	<!-- 김혜린 : 근태신청서 수정 시 파일테이블에서 삭제할 파일번호 조회 -->
+	<select id="selectDeleteFileNo" parameterType="String" resultType="Integer">
+		SELECT
+			file_no fileNo
+		FROM file
+		WHERE file_name = #{fileName}
+	</select>
+
+	<!-- 진수우 : 프로필사진파일 삭제 -->
+	<delete id="deletePhotoFile">
+		DELETE f
+		FROM file f
+		JOIN employee e ON f.file_no = e.photo_file_no
+		WHERE e.employee_no = #{employeeNo}
+	</delete>
+	
+	<!-- 진수우 : 도장사진파일 삭제 -->
+	<delete id="deleteStampFile">
+		DELETE f
+		FROM file f
+		JOIN employee e ON f.file_no = e.stamp_file_no
+		WHERE e.employee_no = #{employeeNo}
+	</delete>
+
+	<!-- 진수우 : 사원파일(프로필사진, 도장사진) 수정 -->
+	<update id="updateFile">
+		UPDATE file
+		SET file_name = #{fileName}
+			, file_ext = #{fileExt}
+			, file_origin = #{fileOrigin}
+			, file_size = #{fileSize}
+			, file_type = #{fileType}
+			, file_category = #{fileCategory}
+		WHERE file_no = #{fileNo}
+	</update>
+	
+	<!-- 진수우 : 개인정보수정 기존파일명출력 -->
+	<select id="selectEmployeeModifyFile">
+		SELECT 
+			fp.file_origin photoFileOrigin
+			, fp.file_ext photoFileExt
+			, fs.file_origin stampFileOrigin
+			, fs.file_ext stampFileExt
+			, fp.file_no photoFileNo
+			, fs.file_no stampFileNo
+			, fp.file_name photoFileName
+			, fs.file_name stampFileName
+		FROM employee e
+		LEFT OUTER JOIN file fp ON e.photo_file_no = fp.file_no
+		LEFT OUTER JOIN file fs ON e.stamp_file_no = fs.file_no
+		WHERE e.employee_no = #{employeeNo}
+	</select>
+	
+	<!-- 진수우 : 사원등록 파일추가 -->
+	<insert id="insertFile" parameterType="com.example.academy.vo.Files" useGeneratedKeys="true" keyProperty="fileNo">
+		INSERT INTO file(
+			file_name
+			, file_ext
+			, file_origin
+			, file_size
+			, file_category
+		) VALUES(
+			#{fileName}
+			, #{fileExt}
+			, #{fileOrigin}
+			, #{fileSize}
+			, #{fileCategory}
+		)
+	</insert>
+
+</mapper>

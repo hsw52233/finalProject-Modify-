@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.academy.mapper.MeetingRoomMapper">
+
+
+	<!-- 하상우) 회의실 번호 조회 -->
+	<select id="getMeetingRoomNo" parameterType="Integer"
+		resultType="com.example.academy.dto.MeetingRoomAddDTO">
+
+		SELECT
+		meetingroom_no meetingroomNo,
+		meetingroom_name meetingroomName,
+		meetingroom_manager meetingroomManager,
+		employee_name employeeName,
+		meetingroom_capacity meetingroomCapacity
+		FROM meetingroom
+		Join employee on
+		meetingroom.meetingroom_manager = employee.employee_no
+		WHERE
+		meetingroom_no = #{meetingroomNo};
+
+	</select>
+
+
+	<update id="modifyMeetingRoom"
+		parameterType="com.example.academy.dto.MeetingRoomAddDTO">
+		UPDATE meetingroom
+		SET
+		meetingroom_name = CASE WHEN #{meetingroomName} != '' THEN #{meetingroomName} ELSE
+		meetingroom_name END,
+		meetingroom_manager = CASE WHEN #{meetingroomManager} != '' THEN (SELECT employee_no FROM
+		employee WHERE employee_no = #{meetingroomManager}) ELSE
+		meetingroom_manager END,
+		meetingroom_capacity = CASE WHEN #{meetingroomCapacity} != '' THEN #{meetingroomCapacity}
+		ELSE meetingroom_capacity END
+		WHERE meetingroom_no = #{meetingroomNo}
+
+	</update>
+
+
+	<!-- 하상우) 회의실 삭제 -->
+
+	<delete id="deleteMeetingRoom"
+		parameterType="com.example.academy.vo.MeetingRoom">
+
+		DELETE FROM meetingroom where meetingroom_no=#{meetingroomNo}
+
+	</delete>
+
+	<!-- 하상우) 회의실 추가 -->
+	<insert id="addMeetingRoom"
+		parameterType="com.example.academy.dto.MeetingRoomAddDTO">
+
+		INSERT INTO meetingroom (
+		meetingroom_name,
+		meetingroom_manager,
+		meetingroom_capacity
+		)
+		VALUES (
+		#{meetingroomName},
+		(SELECT employee_no
+		FROM employee WHERE employee_no = #{meetingroomManager}),
+		#{meetingroomCapacity}
+		);
+	</insert>
+
+
+	<!-- 하상우) 회의실 리스트 -->
+	<select id="getMeetingRoomList"
+		parameterType="com.example.academy.dto.MeetingRoomListDTO"
+		resultType="com.example.academy.dto.MeetingRoomListDTO">
+
+		SELECT
+		meetingroom_no meetingroomNo,
+		meetingroom_name meetingroomName,
+		meetingroom_manager meetingroomManager,
+		employee_name employeeName,
+		meetingroom_capacity meetingroomCapacity,
+		file_name photoFileName,
+		file_ext photoFileExt
+		FROM meetingroom Join employee on
+		meetingroom.meetingroom_manager = employee.employee_no
+		Join file on employee.photo_file_no = file.file_no
+	</select>
+
+</mapper>
+
+
